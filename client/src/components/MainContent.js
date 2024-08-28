@@ -14,7 +14,7 @@ function MainContent({ isSidebarOpen }) {
 
     // Request to model
     const url = "http://localhost:8000/run-model";
-    const postData = { session_id: "abc1", user_id: "user123", input_text: message };
+    const postData = { ChatID: "abc1", UserID: "user123", input_text: message };
 
     try {
       const response = await axios.post(url, postData);

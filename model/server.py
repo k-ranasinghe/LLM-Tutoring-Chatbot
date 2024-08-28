@@ -7,8 +7,8 @@ from app import run_model
 from ChatStoreSQL import update_personalization_params, get_personalization_params
 
 class Request(BaseModel):
-    session_id:str
-    user_id:str
+    ChatID:str
+    UserID:str
     input_text:str
 
 
@@ -38,10 +38,10 @@ app.add_middleware(
 
 @app.post("/run-model")
 async def process_input(req:Request):
-    session_id = req.session_id
-    user_id = req.user_id
+    ChatID = req.ChatID
+    UserID = req.UserID
     input_text = req.input_text
-    response = run_model(session_id,user_id,input_text)
+    response = run_model(ChatID,UserID,input_text)
     return(response)
 
 

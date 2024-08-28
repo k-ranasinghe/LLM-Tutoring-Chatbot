@@ -51,16 +51,16 @@ def process_context(context):
     return result_lines
 
 
-def run_model(session_id, user_id, input_text):
+def run_model(ChatID, UserID, input_text):
     vectorStore = PineconeVectorStore(
         index_name=os.getenv("PINECONE_INDEX"),
         embedding=HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
     )
 
     chain = create_chain(vectorStore)
-    personalization = get_personalization_params(session_id)
+    personalization = get_personalization_params(ChatID)
     
-    chat_history, chat_summary = load_chat_history(session_id)
+    chat_history, chat_summary = load_chat_history(ChatID)
     if chat_history is None:
         chat_history = []
     if chat_summary is None:
@@ -83,6 +83,6 @@ def run_model(session_id, user_id, input_text):
 
         chat_history = chat_history[-10:]
         new_chat_summary = summarize_chat_history(chat_summary, chat_history)
-        save_chat_history(session_id, user_id, chat_history, new_chat_summary)
+        save_chat_history(ChatID, UserID, chat_history, new_chat_summary)
 
         return (response_str)

@@ -5,36 +5,36 @@ def get_template():
 
     # the 5 lists given below contains the relevant instruction to be used for the chat personalization parameters 
     student_types = {
-    "type1": "User age is 10-15. Provide explanations in simple language with clear examples. Focus on engaging and interactive content to maintain interest.",
-    "type2": "User age is 16-18. Offer more detailed explanations, encouraging critical thinking and problem-solving. Use advanced concepts and real-world applications."
+        "type1": "User age is 10-15. Use simple language and clear examples. Avoid complex terminology. Break down concepts into small, digestible parts. Use analogies related to everyday experiences of this age group. Incorporate interactive elements like simple quizzes or thought experiments.",
+        "type2": "User age is 16-18. Use more advanced vocabulary and complex concepts. Encourage critical thinking by asking 'why' and 'how' questions. Relate concepts to real-world applications and potential career paths. Introduce some technical terms, but always explain them."
     }
 
     learning_styles = {
-    "Visual": "Incorporate diagrams, charts, and images to explain concepts. Use visual aids and color-coding to enhance understanding.",
-    "Verbal": "Focus on detailed explanations and word-based information. Encourage reading, writing, and listening activities.",
-    "Active": "Engage with hands-on activities and problem-solving tasks. Include interactive exercises to involve the learner actively.",
-    "Intuitive": "Highlight abstract concepts and patterns. Encourage exploring new ideas and looking beyond the obvious solutions.",
-    "Reflective": "Allow time for thinking and self-assessment. Use reflective questions and activities that promote deep thinking."
+        "Visual": "Use descriptive language to paint mental pictures. Suggest sketching diagrams or flowcharts. Refer to visual concepts like color, shape, or spatial relationships. Recommend visual learning aids like mind maps or infographics.",
+        "Verbal": "Emphasize written and spoken explanations. Suggest summarizing concepts in words. Encourage articulating ideas aloud. Recommend creating acronyms or mnemonic devices for key points.",
+        "Active": "Propose hands-on coding exercises or algorithm simulations. Suggest role-playing different parts of a system or algorithm. Encourage implementing concepts in a preferred programming language.",
+        "Intuitive": "Focus on the 'why' behind concepts. Explore theoretical aspects and potential future developments. Encourage finding connections between different algorithms or data structures. Suggest coming up with novel applications of the concept.",
+        "Reflective": "Propose thought experiments. Encourage journaling about learning process. Suggest comparing and contrasting different approaches. Ask open-ended questions that require deep contemplation."
     }
 
     communication_formats = {
-    "Textbook": "Present information in a structured and detailed manner. Use formal language and include definitions, examples, and exercises.",
-    "Layman": "Simplify complex concepts using everyday language. Avoid jargon and use relatable analogies to explain ideas.",
-    "Storytelling": "Weave information into a narrative. Use characters, plots, and scenarios to make the content more engaging and memorable."
+        "Textbook": "Use formal language and structure. Define all technical terms. Provide step-by-step explanations. Include 'Key Points' summaries. Suggest practice problems or exercises.",
+        "Layman": "Use everyday analogies and real-life examples. Avoid technical jargon, or explain it thoroughly when used. Break complex ideas into simpler components. Use 'imagine if...' scenarios to illustrate points.",
+        "Storytelling": "Create characters or scenarios to illustrate concepts. Develop a narrative arc in explanations. Use cliffhangers or plot twists to maintain engagement. Relate concepts to character's journey or problem-solving."
     }
 
     tone_styles = {
-    "Encouraging": "Use positive reinforcement and motivational language. Highlight progress and encourage continuous effort.",
-    "Neutral": "Provide information in an unbiased and straightforward manner. Avoid emotional language and keep the tone professional.",
-    "Informative": "Focus on delivering facts and explanations. Ensure clarity and accuracy without adding personal opinions.",
-    "Friendly": "Use a warm and approachable tone. Engage the reader with casual language and show empathy towards their needs."
+        "Encouraging": "Use phrases like 'Great question!', 'You're on the right track'. Acknowledge effort and progress. Provide positive reinforcement for attempts, not just correct answers. Offer reassurance when concepts are challenging.",
+        "Neutral": "Present information without emotional coloring. Use phrases like 'Consider this...', 'One approach is...'. Avoid superlatives or judgment words. Present multiple viewpoints objectively.",
+        "Informative": "Focus on facts and established knowledge. Use phrases like 'Research shows...', 'In practice,...'. Cite sources or reference well-known experts. Provide context for why the information is relevant.",
+        "Friendly": "Use conversational language and personal pronouns. Share anecdotes or personal experiences when relevant. Use humor appropriately. Show empathy with phrases like 'I understand this can be tricky'."
     }
 
     reasoning_frameworks = {
-    "Deductive": "Start with general principles and apply them to specific cases. Ensure conclusions follow logically from premises.",
-    "Inductive": "Use specific examples to build general conclusions. Highlight patterns and trends to support the reasoning.",
-    "Abductive": "Explore the most likely explanation based on available evidence. Consider multiple possibilities and narrow down to the best hypothesis.",
-    "Analogical": "Draw comparisons between similar situations to explain concepts. Use analogies to illustrate relationships and outcomes."
+        "Deductive": "Start with general principles of computer science or mathematics. Guide towards specific applications or examples. Use 'If...then' statements to show logical progression. Encourage deriving specific cases from general rules.",
+        "Inductive": "Begin with specific examples or case studies. Guide towards forming general principles or patterns. Use phrases like 'What do you notice about these examples?'. Encourage making predictions based on observed patterns.",
+        "Abductive": "Present a 'mystery' or unexplained phenomenon in computing. Encourage generating multiple hypotheses. Guide through evaluating evidence for each hypothesis. Use phrases like 'What's the most likely explanation?'.",
+        "Analogical": "Draw parallels between the concept and a familiar system or process. Use phrases like 'This is similar to...'. Encourage finding similarities and differences between the analogy and the actual concept. Guide through applying insights from the analogy to the original problem."
     }
 
 

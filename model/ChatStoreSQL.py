@@ -44,28 +44,28 @@ def deserialize_chat_history(serialized_history):
     return chat_history
 
 # Function to save chat history to MySQL
-def save_chat_history(session_id, user_id, chat_history, chat_summary):
+def save_chat_history(ChatID, UserID, chat_history, chat_summary):
     connection = get_mysql_connection()
     cursor = connection.cursor()
     
     serialized_history = serialize_chat_history(chat_history)
     
     cursor.execute("""
-        INSERT INTO chat_sessions (session_id, user_id, chat_history, chat_summary)
+        INSERT INTO chat_sessions (ChatID, UserID, chat_history, chat_summary)
         VALUES (%s, %s, %s, %s)
         ON DUPLICATE KEY UPDATE chat_history = %s, chat_summary = %s
-    """, (session_id, user_id, serialized_history, chat_summary, serialized_history, chat_summary))
+    """, (ChatID, UserID, serialized_history, chat_summary, serialized_history, chat_summary))
     
     connection.commit()
     cursor.close()
     connection.close()
 
 # Function to load chat history from MySQL
-def load_chat_history(session_id):
+def load_chat_history(ChatID):
     connection = get_mysql_connection()
     cursor = connection.cursor()
     
-    cursor.execute("SELECT chat_history, chat_summary FROM chat_sessions WHERE session_id = %s", (session_id,))
+    cursor.execute("SELECT chat_history, chat_summary FROM chat_sessions WHERE ChatID = %s", (ChatID,))
     result = cursor.fetchone()
     
     if result:

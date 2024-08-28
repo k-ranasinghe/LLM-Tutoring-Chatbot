@@ -1,21 +1,18 @@
 from langchain_openai import ChatOpenAI
 from langchain_groq import ChatGroq
-from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_retrieval_chain
 from langchain_core.prompts import MessagesPlaceholder
 from langchain.chains.history_aware_retriever import create_history_aware_retriever
-from langchain.chains.query_constructor.base import (
-    StructuredQueryOutputParser,
-    get_query_constructor_prompt,
-)
+from langchain.chains.query_constructor.base import (StructuredQueryOutputParser, get_query_constructor_prompt)
 from langchain.retrievers.self_query.pinecone import PineconeTranslator
 from langchain.retrievers.self_query.base import SelfQueryRetriever
 from langchain.chains.query_constructor.base import AttributeInfo
 from dotenv import load_dotenv
 import os
 from PromptEng import get_template
+from examples import get_examples
 
 load_dotenv()
 groq_api_key=os.getenv('GROQ_API_KEY')
@@ -39,175 +36,13 @@ def create_chain(vectorStore):
         ),
         AttributeInfo(
             name="subject",
-            description="The subject relevant to the document. One of 'Programming', 'Electronics', '3D Design', 'Manufacturing' or 'Other'.",
+            description='The subject relevant to the document. One of "Programming", "Electronics", "3D Design", "Manufacturing" or "Other".',
             type="string",
         ),
-        # AttributeInfo(
-        #     name="Scope",
-        #     description="The scope of the document. One of 'Introduction', 'Basics', 'Lab Activity', 'Project' or 'Other'.",
-        #     type="string",
-        # ),
-        # AttributeInfo(
-        #     name="Difficulty_level",
-        #     description="The difficulty level of the content, on a scale of 1-5",
-        #     type="integer",
-        # ),
     ]
 
     document_content_description = "Brief description of educational content"
 
-    # Define examples for the query constructor
-    examples = [
-        {
-            "user_query": "what is bubble sort?",
-            "structured_request": "",
-            # {
-            #     "query": "bubble sort algorithm implementation and efficiency",
-            #     "filter": "and(eq(\"course\", \"Programming\"), eq(\"subject\", \"Programming\"))",
-            # },
-            "data_source":"",
-            # {
-            #                 "content": "Lyrics of a song",
-            #                 # "attributes": {
-            #                 #     "course": {
-            #                 #         "type": "string",
-            #                 #         "description": "Name of the song artist"
-            #                 #     },
-            #                 #     "subject": {
-            #                 #         "type": "integer",
-            #                 #         "description": "Length of the song in seconds"
-            #                 #     },
-            #                 # }
-            #             },
-            "i": 0,
-        },
-        # {
-        #     "user_query": "what is bubble sort?",
-        #     "structured_request": {
-        #                             "query": "bubble sort algorithm implementation and efficiency",
-        #                             "filter": "and(eq(\"course\", \"Programming\"), eq(\"subject\", \"Programming\"))",
-        #                         },
-        #     "data_source":{
-        #                     # "content": "Lyrics of a song",
-        #                     # "attributes": {
-        #                     #     "course": {
-        #                     #         "type": "string",
-        #                     #         "description": "Name of the song artist"
-        #                     #     },
-        #                     #     "subject": {
-        #                     #         "type": "integer",
-        #                     #         "description": "Length of the song in seconds"
-        #                     #     },
-        #                     # }
-        #                 },
-        #     "i": 1,
-        # },
-        # {
-        #     "user_query": "what is bubble sort?",
-        #     "structured_request": {
-        #                             "query": "bubble sort algorithm implementation and efficiency",
-        #                             "filter": "and(eq(\"course\", \"Programming\"), eq(\"subject\", \"Programming\"))",
-        #                         },
-        #     "data_source":{
-        #                     # "content": "Lyrics of a song",
-        #                     # "attributes": {
-        #                     #     "course": {
-        #                     #         "type": "string",
-        #                     #         "description": "Name of the song artist"
-        #                     #     },
-        #                     #     "subject": {
-        #                     #         "type": "integer",
-        #                     #         "description": "Length of the song in seconds"
-        #                     #     },
-        #                     # }
-        #                 },
-        #     "i": 2,
-        # },
-        # {
-        #     "user_query": "what is bubble sort?",
-        #     "structured_request": {
-        #                             "query": "bubble sort algorithm implementation and efficiency",
-        #                             "filter": "and(eq(\"course\", \"Programming\"), eq(\"subject\", \"Programming\"))",
-        #                         },
-        #     "data_source":{
-        #                     # "content": "Lyrics of a song",
-        #                     # "attributes": {
-        #                     #     "course": {
-        #                     #         "type": "string",
-        #                     #         "description": "Name of the song artist"
-        #                     #     },
-        #                     #     "subject": {
-        #                     #         "type": "integer",
-        #                     #         "description": "Length of the song in seconds"
-        #                     #     },
-        #                     # }
-        #                 },
-        #     "i": 3,
-        # },
-        # {
-        #     "user_query": "what is bubble sort?",
-        #     "structured_request": {
-        #                             "query": "bubble sort algorithm implementation and efficiency",
-        #                             "filter": "and(eq(\"course\", \"Programming\"), eq(\"subject\", \"Programming\"))",
-        #                         },
-        #     "data_source":{
-        #                     # "content": "Lyrics of a song",
-        #                     # "attributes": {
-        #                     #     "course": {
-        #                     #         "type": "string",
-        #                     #         "description": "Name of the song artist"
-        #                     #     },
-        #                     #     "subject": {
-        #                     #         "type": "integer",
-        #                     #         "description": "Length of the song in seconds"
-        #                     #     },
-        #                     # }
-        #                 },
-        #     "i": 4,
-        # },
-        # {
-        #     "user_query": "what is bubble sort?",
-        #     "structured_request": {
-        #                             "query": "bubble sort algorithm implementation and efficiency",
-        #                             "filter": "and(eq(\"course\", \"Programming\"), eq(\"subject\", \"Programming\"))",
-        #                         },
-        #     "data_source":{
-        #                     # "content": "Lyrics of a song",
-        #                     # "attributes": {
-        #                     #     "course": {
-        #                     #         "type": "string",
-        #                     #         "description": "Name of the song artist"
-        #                     #     },
-        #                     #     "subject": {
-        #                     #         "type": "integer",
-        #                     #         "description": "Length of the song in seconds"
-        #                     #     },
-        #                     # }
-        #                 },
-        #     "i": 5,
-        # },
-        # {
-        #     "user_query": "what is bubble sort?",
-        #     "structured_request": {
-        #                             "query": "bubble sort algorithm implementation and efficiency",
-        #                             "filter": "and(eq(\"course\", \"Programming\"), eq(\"subject\", \"Programming\"))",
-        #                         },
-        #     "data_source":{
-        #                     # "content": "Lyrics of a song",
-        #                     # "attributes": {
-        #                     #     "course": {
-        #                     #         "type": "string",
-        #                     #         "description": "Name of the song artist"
-        #                     #     },
-        #                     #     "subject": {
-        #                     #         "type": "integer",
-        #                     #         "description": "Length of the song in seconds"
-        #                     #     },
-        #                     # }
-        #                 },
-        #     "i": 6,
-        # }
-    ]
 
     # Get the base retriever
     # base_retriever = vectorStore.as_retriever()
@@ -221,7 +56,7 @@ def create_chain(vectorStore):
     prompt = get_query_constructor_prompt(
         document_content_description,
         metadata_field_info,
-        # examples=examples,
+        examples=get_examples(),
     )
     output_parser = StructuredQueryOutputParser.from_components()
     query_constructor = prompt | model | output_parser
