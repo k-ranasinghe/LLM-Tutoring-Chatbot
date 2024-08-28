@@ -108,6 +108,10 @@ def get_template():
     - **Tone Style:** {tone_style}
     - **Reasoning Framework:** {reasoning_framework}
 
+    You are provided with notes taken by mentors on this user for the courses 'Programming' and '3D Design'. Use these notes to tailor your responses to the user's learning needs. Use relevant course notes based on user query. Adapt your explanations based on each student's level of understanding, preferences, and learning pace provided in these mentor notes.
+    - **Programming Course Mentor Notes:** {programming_notes}
+    - **#D Design Course Mentor Notes:** {3Ddesign_notes}
+
     Remember to keep responses concise and under 100 words, and directly address the user in the first person. Use the provided context and conversation summary to inform your responses, but do not reference them explicitly.
 
     Your goal is to foster independent thinking and boost the student's confidence in their ability to learn and problem-solve.
@@ -133,7 +137,7 @@ def get_template():
         example_prompt=example_prompt,
         prefix=prefix,
         suffix=suffix,
-        input_variables=["context", "input", "chat_summary", "student_type", "learning_style", "communication_format", "tone_style", "reasoning_framework"],
+        input_variables=["context", "input", "chat_summary", "student_type", "learning_style", "communication_format", "tone_style", "reasoning_framework", "programming_notes", "3Ddesign_notes"],
         example_separator="\n\n"
     )
 

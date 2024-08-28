@@ -49,10 +49,33 @@ INSERT INTO Chat_info (ChatID, Chat_title, Student_type, Learning_style, Communi
 VALUES ('abc1', 'Introduction to Python', 'type2', 'Intuitive', 'Storytelling', 'Neutral', 'Abductive');
 
 
+CREATE TABLE Mentor_notes (
+	NoteID INT AUTO_INCREMENT PRIMARY KEY,
+    MentorID VARCHAR(50) NOT NULL,
+    StudentID VARCHAR(50) NOT NULL,
+    Course VARCHAR(255),
+    Notes TEXT
+);
+
+INSERT INTO mentor_notes (mentorid, studentid, course, notes) VALUES 
+(
+"user789",
+"user123", 
+'Programming', 
+'The student has demonstrated a solid understanding of timing complexities and data structures. We covered various topics including Big O notation, sorting algorithms (bubble sort, merge sort), and basic data structures (arrays, linked lists, and trees). The student has shown good progress in applying these concepts to practical problems and has completed all exercises with a high level of accuracy. However, there is room for improvement in understanding advanced data structures like graphs and hash tables. Additional focus on optimizing code for performance is recommended.'
+),
+(
+"user789",
+"user123", 
+'3D Design', 
+'The student has shown considerable progress in 3D design concepts. We covered a range of topics including basic modeling techniques, texture mapping, and lighting. The student has successfully created several 3D models using various tools and techniques such as extrusion, lofting, and Boolean operations. Their work demonstrates a good understanding of spatial relationships and object composition. However, there is room for improvement in applying advanced rendering techniques and optimizing models for performance. Additional practice with animation and real-time rendering engines would further enhance their skills.'
+);
+
 
 select * from Chat_sessions;
 select * from PersonalizationInstructions;
 select * from Chat_info;
+select * from Mentor_notes;
 
 
 

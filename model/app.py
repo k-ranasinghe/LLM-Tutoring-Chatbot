@@ -7,7 +7,7 @@ import os
 import time
 
 from chain import create_chain
-from ChatStoreSQL import save_chat_history, load_chat_history, get_instruction, get_personalization_params
+from ChatStoreSQL import save_chat_history, load_chat_history, get_instruction, get_personalization_params, get_mentor_notes_by_course
 from ChatSummarizer import summarize_chat_history
 
 load_dotenv()
@@ -15,7 +15,7 @@ os.environ["LANGCHAIN_TRACING_V2"]="true"
 os.environ["LANGCHAIN_API_KEY"]=os.getenv("LANGCHAIN_API_KEY")
 
 
-def process_chat(chain, question, chat_history, chat_summary, personalization):
+def process_chat(chain, question, chat_history, chat_summary, personalization, notes):
     response = chain.invoke({
         "input": question,
         "chat_history": chat_history,
@@ -25,6 +25,8 @@ def process_chat(chain, question, chat_history, chat_summary, personalization):
         "communication_format" : get_instruction(personalization['communication_format']),
         "tone_style" : get_instruction(personalization['tone_style']),
         "reasoning_framework" : get_instruction(personalization['reasoning_framework']),
+        "programming_notes" : notes["Programming"],
+        "3Ddesign_notes" :  notes["3D Design"]
     })
 
     if response["context"] == []:
@@ -59,6 +61,7 @@ def run_model(ChatID, UserID, input_text):
 
     chain = create_chain(vectorStore)
     personalization = get_personalization_params(ChatID)
+    notes = get_mentor_notes_by_course(UserID)
     
     chat_history, chat_summary = load_chat_history(ChatID)
     if chat_history is None:
@@ -70,7 +73,7 @@ def run_model(ChatID, UserID, input_text):
         start=time.process_time()
         chat_history = chat_history[-10:]
         chat_summary = chat_summary
-        response, context = process_chat(chain, input_text, chat_history, chat_summary, personalization)
+        response, context = process_chat(chain, input_text, chat_history, chat_summary, personalization, notes)
 
         formatted_string = process_context(context)
         print(formatted_string)

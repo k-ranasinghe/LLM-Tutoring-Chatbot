@@ -170,3 +170,39 @@ def update_personalization_params(chat_id, chat_title, student_type, learning_st
     
     cursor.close()
     conn.close()
+
+
+def get_mentor_notes_by_course(studentid):
+    # Establish a database connection
+    connection = get_mysql_connection()
+    cursor = connection.cursor(dictionary=True)
+    
+    # SQL query to fetch notes for the given studentid
+    query = """
+    SELECT course, notes
+    FROM mentor_notes
+    WHERE studentid = %s
+    """
+    cursor.execute(query, (studentid,))
+    
+    # Fetch all results
+    results = cursor.fetchall()
+    
+    # Close the cursor and connection
+    cursor.close()
+    connection.close()
+    
+    # Initialize a dictionary to hold concatenated notes by course
+    notes_by_course = {}
+    
+    for result in results:
+        course = result['course']
+        notes = result['notes']
+        
+        if course not in notes_by_course:
+            notes_by_course[course] = ""
+        
+        # Concatenate notes with a space
+        notes_by_course[course] += " " + notes.strip()
+    
+    return notes_by_course
