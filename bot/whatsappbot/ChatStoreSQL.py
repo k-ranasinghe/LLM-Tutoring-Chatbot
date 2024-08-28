@@ -44,28 +44,28 @@ def deserialize_chat_history(serialized_history):
     return chat_history
 
 # Function to save chat history to MySQL
-def save_chat_history(session_id, user_id, chat_history, chat_summary):
+def save_chat_history(ChatID, UserID, chat_history, chat_summary):
     connection = get_mysql_connection()
     cursor = connection.cursor()
     
     serialized_history = serialize_chat_history(chat_history)
     
     cursor.execute("""
-        INSERT INTO chat_sessions (session_id, user_id, chat_history, chat_summary)
+        INSERT INTO chat_sessions (ChatID, UserID, chat_history, chat_summary)
         VALUES (%s, %s, %s, %s)
         ON DUPLICATE KEY UPDATE chat_history = %s, chat_summary = %s
-    """, (session_id, user_id, serialized_history, chat_summary, serialized_history, chat_summary))
+    """, (ChatID, UserID, serialized_history, chat_summary, serialized_history, chat_summary))
     
     connection.commit()
     cursor.close()
     connection.close()
 
 # Function to load chat history from MySQL
-def load_chat_history(session_id):
+def load_chat_history(ChatID):
     connection = get_mysql_connection()
     cursor = connection.cursor()
     
-    cursor.execute("SELECT chat_history, chat_summary FROM chat_sessions WHERE session_id = %s", (session_id,))
+    cursor.execute("SELECT chat_history, chat_summary FROM chat_sessions WHERE ChatID = %s", (ChatID,))
     result = cursor.fetchone()
     
     if result:
@@ -94,3 +94,115 @@ def save_chat_summary(session_id, chat_summary):
     connection.commit()
     cursor.close()
     connection.close()
+
+
+def get_instruction(parameter):
+    connection = get_mysql_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    # Execute the query with the given parameters
+    cursor.execute("""
+    SELECT instruction 
+    FROM PersonalizationInstructions 
+    WHERE parameter = %s
+    """, (parameter,))
+
+    # Fetch the result
+    result = cursor.fetchone()
+
+    # Close the cursor and connection
+    cursor.close()
+    connection.close()
+
+    return result['instruction']
+
+
+def get_personalization_params(chat_id):
+    # Connect to the MySQL database
+    conn = get_mysql_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # SQL query to fetch the personalization parameters
+    query = """
+    SELECT Chat_title, Student_type, Learning_style, Communication_format, Tone_style, Reasoning_framework 
+    FROM Chat_info 
+    WHERE ChatID = %s
+    """
+    cursor.execute(query, (chat_id,))
+    result = cursor.fetchone()
+
+    # Close the cursor and connection
+    cursor.close()
+    conn.close()
+
+    # Return the result as a dictionary
+    if result:
+        return {
+            "chat_title": result['Chat_title'],
+            "student_type": result['Student_type'],
+            "learning_style": result['Learning_style'],
+            "communication_format": result['Communication_format'],
+            "tone_style": result['Tone_style'],
+            "reasoning_framework": result['Reasoning_framework']
+        }
+    else:
+        return {}
+    
+
+def update_personalization_params(chat_id, chat_title, student_type, learning_style, communication_format, tone_style, reasoning_framework):
+    conn = get_mysql_connection()
+    cursor = conn.cursor()
+
+    query = """
+        UPDATE Chat_info
+        SET 
+            Chat_title = %s,
+            Student_type = %s,
+            Learning_style = %s,
+            Communication_format = %s,
+            Tone_style = %s,
+            Reasoning_framework = %s
+        WHERE 
+            ChatID = %s
+    """
+    cursor.execute(query, (chat_title, student_type, learning_style, communication_format, tone_style, reasoning_framework, chat_id))
+    conn.commit()
+    
+    cursor.close()
+    conn.close()
+
+
+def get_mentor_notes_by_course(studentid):
+    # Establish a database connection
+    connection = get_mysql_connection()
+    cursor = connection.cursor(dictionary=True)
+    
+    # SQL query to fetch notes for the given studentid
+    query = """
+    SELECT course, notes
+    FROM mentor_notes
+    WHERE studentid = %s
+    """
+    cursor.execute(query, (studentid,))
+    
+    # Fetch all results
+    results = cursor.fetchall()
+    
+    # Close the cursor and connection
+    cursor.close()
+    connection.close()
+    
+    # Initialize a dictionary to hold concatenated notes by course
+    notes_by_course = {}
+    
+    for result in results:
+        course = result['course']
+        notes = result['notes']
+        
+        if course not in notes_by_course:
+            notes_by_course[course] = ""
+        
+        # Concatenate notes with a space
+        notes_by_course[course] += " " + notes.strip()
+    
+    return notes_by_course

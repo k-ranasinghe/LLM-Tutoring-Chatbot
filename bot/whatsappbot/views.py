@@ -19,11 +19,20 @@ def bot(request):
 
     print(message, sender_name, sender_number)
 
-    # if message == "Hi":
+    media_urls = [
+        "https://www.geeky-gadgets.com/wp-content/uploads/2024/02/ChatGPT-alternative-Groq.jpg",  # Replace with your image URL
+        "https://cdn.mos.cms.futurecdn.net/emJzqH4JermveVrtNC4BsZ.png"  # Replace with your document URL
+    ]
+
+    response =run_model("abc1","user123",message)
+    context_lines = "\n".join(response["context"])
+    formatted_string = f"{response["response"]}\n\nRecommended Resources:\n{context_lines}"
+
     client.messages.create(
-            # body="Hi {}".format(sender_name),
-            body=run_model(sender_number,sender_name,message),
+            body=formatted_string,
             from_='whatsapp:+14155238886',
-            to=sender_number
+            to=sender_number,
+            media_url=media_urls  # Sending multiple media files
     )
+
     return HttpResponse("hello")

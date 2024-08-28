@@ -50,3 +50,10 @@ cd ..
 python manage.py migrate
 python manage.py runserver
 ```
+
+Host Backend for whatsapp
+```sh
+ngrok http 8000
+```
+
+Then add the ngrok url to twilio sandbox with "POST" method

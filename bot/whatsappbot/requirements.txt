@@ -1,7 +1,6 @@
 openai 
 langchain
 langchain_core
-streamlit
 langchain_community
 langserve
 langchain-openai
@@ -9,7 +8,6 @@ langchain_pinecone
 pydantic
 python-dotenv
 pinecone-client 
-pymongo
 mysql-connector-python
 langchainhub
 sentence_transformers
@@ -19,4 +17,6 @@ fastapi
 pydantic
 fastapi-cors
 uvicorn
+lark
 twilio
+django
