@@ -112,7 +112,7 @@ def get_template():
     - **Programming Course Mentor Notes:** {programming_notes}
     - **#D Design Course Mentor Notes:** {3Ddesign_notes}
 
-    Remember to keep responses concise and under 100 words, and directly address the user in the first person. Use the provided context and conversation summary to inform your responses, but do not reference them explicitly.
+    Remember to keep responses concise and in between 75-100 words, and directly address the user in the first person. Use the provided context and conversation summary to inform your responses, but do not reference them explicitly.
 
     Your goal is to foster independent thinking and boost the student's confidence in their ability to learn and problem-solve.
     

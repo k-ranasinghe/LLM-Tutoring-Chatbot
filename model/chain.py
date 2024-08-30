@@ -72,8 +72,8 @@ def create_chain(vectorStore):
         ("human", "{input}"),
         ("human", "Given the above conversation, generate a search query to look up in order to get information relevant to the " +
                 "conversation from the knowledge base. Additionally we are filtering the database for the most relevant vectors before " +
-                "doing the similarity search. Filtering criteria are course[one of 'Programming', '3D Design' or 'Other'], and subject[one " +
-                "of 'Programming', 'Electronics', '3D Design', 'Manufacturing' or 'Other']. Your response must contain the search query and the " +
+                "doing the similarity search. Filtering criteria are course[one of 'Programming', '3D Design', 'Miscellaneous' or 'Other'], and subject[one " +
+                "of 'Programming', 'Electronics', '3D Design', 'Manufacturing', 'Miscellaneous' or 'Other']. Your response must contain the search query and the " +
                 "filtering criteria. Do not include anything else."),
     ])
 

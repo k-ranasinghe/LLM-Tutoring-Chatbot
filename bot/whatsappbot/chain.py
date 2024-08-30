@@ -19,8 +19,8 @@ groq_api_key=os.getenv('GROQ_API_KEY')
 openai_api_key = os.getenv('OPENAI_API_KEY')
 
 def create_chain(vectorStore):
-    model=ChatGroq(groq_api_key=groq_api_key, model_name="mixtral-8x7b-32768")
-    # model=ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o-mini")
+    # model=ChatGroq(groq_api_key=groq_api_key, model_name="mixtral-8x7b-32768")
+    model=ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o-mini")
     chain = create_stuff_documents_chain(
         llm=model,
         prompt=get_template(),

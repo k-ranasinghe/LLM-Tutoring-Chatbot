@@ -79,6 +79,8 @@ def run_model(ChatID, UserID, input_text):
         print(formatted_string)
 
         response_time = str(time.process_time()-start)
+        print(response_time)
+
         response_str = {"response":response, "response_time":response_time, "context":formatted_string}
 
         chat_history.append(HumanMessage(content=input_text))

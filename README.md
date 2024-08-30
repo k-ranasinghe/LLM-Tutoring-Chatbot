@@ -5,14 +5,14 @@ Develop an intelligent tutoring chatbot (Obo Tutor) powered by large language mo
 
 # Setup
 
-Frontend Web App
+Frontend Web App (port=3000)
 ```sh
 cd client
 npm install
 npm start
 ```
 
-Backend Web App
+Backend Web App (port=8000)
 ```sh
 cd model
 python -m venv venv
@@ -21,14 +21,14 @@ pip install -r requirements.txt
 uvicorn server:app --reload
 ```
 
-Frontend Admin
+Frontend Admin (port=3001)
 ```sh
 cd admin/frontend
 npm install
 npm run dev
 ```
 
-Backend Admin
+Backend Admin (port=8001)
 ```sh
 cd admin
 python -m venv venv
@@ -39,7 +39,7 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-Backend Whatsapp
+Backend Whatsapp (port=8002)
 ```sh
 cd bot
 python -m venv venv
@@ -53,7 +53,7 @@ python manage.py runserver
 
 Host Backend for whatsapp
 ```sh
-ngrok http 8000
+ngrok http 8002
 ```
 
 Then add the ngrok url to twilio sandbox with "POST" method
