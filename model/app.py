@@ -1,10 +1,11 @@
 from langchain_openai import OpenAIEmbeddings
-from langchain.embeddings.huggingface import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from langchain_core.messages import HumanMessage, AIMessage
 from dotenv import load_dotenv
 import os
 import time
+import warnings
 
 from chain import create_chain
 from ChatStoreSQL import save_chat_history, load_chat_history, get_instruction, get_personalization_params, get_mentor_notes_by_course
@@ -13,7 +14,7 @@ from ChatSummarizer import summarize_chat_history
 load_dotenv()
 os.environ["LANGCHAIN_TRACING_V2"]="true"
 os.environ["LANGCHAIN_API_KEY"]=os.getenv("LANGCHAIN_API_KEY")
-
+warnings.filterwarnings("ignore", category=FutureWarning, module="transformers")
 
 def process_chat(chain, question, chat_history, chat_summary, personalization, notes):
     response = chain.invoke({
@@ -70,7 +71,7 @@ def run_model(ChatID, UserID, input_text):
         chat_summary = ""
 
     if input_text:
-        start=time.process_time()
+        start=time.time()
         chat_history = chat_history[-10:]
         chat_summary = chat_summary
         response, context = process_chat(chain, input_text, chat_history, chat_summary, personalization, notes)
@@ -78,7 +79,7 @@ def run_model(ChatID, UserID, input_text):
         formatted_string = process_context(context)
         print(formatted_string)
 
-        response_time = str(time.process_time()-start)
+        response_time = str(time.time()-start)
         print(response_time)
 
         response_str = {"response":response, "response_time":response_time, "context":formatted_string}

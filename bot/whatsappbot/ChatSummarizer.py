@@ -1,5 +1,5 @@
 from langchain_core.prompts import ChatPromptTemplate
-from langchain import LLMChain
+from langchain.chains import LLMChain
 from langchain_groq import ChatGroq
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv

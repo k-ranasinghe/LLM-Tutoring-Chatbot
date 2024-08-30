@@ -1,10 +1,11 @@
 from langchain_openai import OpenAIEmbeddings
-from langchain.embeddings.huggingface import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from langchain_core.messages import HumanMessage, AIMessage
 from dotenv import load_dotenv
 import os
 import time
+import warnings
 
 from .chain import create_chain
 from .ChatStoreSQL import save_chat_history, load_chat_history, get_instruction, get_personalization_params, get_mentor_notes_by_course
@@ -13,6 +14,7 @@ from .ChatSummarizer import summarize_chat_history
 load_dotenv()
 os.environ["LANGCHAIN_TRACING_V2"]="true"
 os.environ["LANGCHAIN_API_KEY"]=os.getenv("LANGCHAIN_API_KEY")
+warnings.filterwarnings("ignore", category=FutureWarning, module="transformers")
 
 
 def process_chat(chain, question, chat_history, chat_summary, personalization, notes):

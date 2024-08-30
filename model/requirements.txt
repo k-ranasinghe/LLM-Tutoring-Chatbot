@@ -4,6 +4,7 @@ langchain_core
 langchain_community
 langserve
 langchain-openai
+langchain-huggingface
 langchain_pinecone
 pydantic
 python-dotenv

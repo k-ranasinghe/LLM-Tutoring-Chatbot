@@ -6,7 +6,7 @@ from langchain.chains import create_retrieval_chain
 from langchain_core.prompts import MessagesPlaceholder
 from langchain.chains.history_aware_retriever import create_history_aware_retriever
 from langchain.chains.query_constructor.base import (StructuredQueryOutputParser, get_query_constructor_prompt)
-from langchain.retrievers.self_query.pinecone import PineconeTranslator
+from langchain_community.query_constructors.pinecone import PineconeTranslator
 from langchain.retrievers.self_query.base import SelfQueryRetriever
 from langchain.chains.query_constructor.base import AttributeInfo
 from dotenv import load_dotenv

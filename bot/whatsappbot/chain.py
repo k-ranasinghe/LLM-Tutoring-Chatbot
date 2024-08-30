@@ -6,7 +6,7 @@ from langchain.chains import create_retrieval_chain
 from langchain_core.prompts import MessagesPlaceholder
 from langchain.chains.history_aware_retriever import create_history_aware_retriever
 from langchain.chains.query_constructor.base import (StructuredQueryOutputParser, get_query_constructor_prompt)
-from langchain.retrievers.self_query.pinecone import PineconeTranslator
+from langchain_community.query_constructors.pinecone import PineconeTranslator
 from langchain.retrievers.self_query.base import SelfQueryRetriever
 from langchain.chains.query_constructor.base import AttributeInfo
 from dotenv import load_dotenv
@@ -19,8 +19,8 @@ groq_api_key=os.getenv('GROQ_API_KEY')
 openai_api_key = os.getenv('OPENAI_API_KEY')
 
 def create_chain(vectorStore):
-    # model=ChatGroq(groq_api_key=groq_api_key, model_name="mixtral-8x7b-32768")
-    model=ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o-mini")
+    model=ChatGroq(groq_api_key=groq_api_key, model_name="mixtral-8x7b-32768")
+    # model=ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o-mini")
     chain = create_stuff_documents_chain(
         llm=model,
         prompt=get_template(),

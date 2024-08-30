@@ -8,13 +8,16 @@ import pandas as pd
 import cv2
 from PIL import Image
 from langchain_openai.embeddings import OpenAIEmbeddings
-from langchain.embeddings.huggingface import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from pinecone import Pinecone, ServerlessSpec
 from langchain_pinecone import PineconeVectorStore
 
 
 from dotenv import load_dotenv
 import os
+import warnings
+
+warnings.filterwarnings("ignore", category=FutureWarning, module="transformers")
 
 # Load environment variables from .env file
 load_dotenv()
@@ -259,7 +262,7 @@ def process_videos_in_directory(input_dir, output_dir_base, frame_rate, course, 
 
 
 from langchain_community.document_loaders import PyPDFLoader, PyPDFDirectoryLoader, UnstructuredEPubLoader, UnstructuredExcelLoader, NotebookLoader, PythonLoader, SQLDatabaseLoader, UnstructuredXMLLoader
-from langchain.document_loaders import (
+from langchain_community.document_loaders import (
     UnstructuredWordDocumentLoader,
     TextLoader,
     UnstructuredHTMLLoader,
