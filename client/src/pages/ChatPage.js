@@ -8,13 +8,15 @@ function ChatPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      <div className="flex flex-grow">
-        <Sidebar isOpen={isSidebarOpen} toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} chatId="abc1" />
-        <MainContent isSidebarOpen={isSidebarOpen} />
+    <div className="flex flex-col h-screen">
+      <Header className="h-16" /> {/* Adjust height to match Header */}
+      <div className="flex flex-grow overflow-hidden">
+        <Sidebar className="fixed top-16 left-0 bottom-0 w-64" isOpen={isSidebarOpen} toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} chatId="abc1" />
+        <div className="flex flex-col flex-grow ml-10">
+          <MainContent isSidebarOpen={isSidebarOpen} />
+        </div>
       </div>
-      <Footer />
+      <Footer className="h-16" /> {/* Adjust height to match Footer */}
     </div>
   );
 }
