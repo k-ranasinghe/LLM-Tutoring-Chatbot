@@ -24,7 +24,8 @@ def serialize_chat_history(chat_history):
         if isinstance(message, HumanMessage) or isinstance(message, AIMessage):
             serialized_message = {
                 "type": message.__class__.__name__,
-                "content": message.content
+                "content": message.content,
+                "context": message.response_metadata
             }
             serialized_history.append(serialized_message)
         # Add additional handling for other message types if necessary
@@ -36,7 +37,7 @@ def deserialize_chat_history(serialized_history):
         if serialized_message["type"] == "HumanMessage":
             message = HumanMessage(content=serialized_message["content"])
         elif serialized_message["type"] == "AIMessage":
-            message = AIMessage(content=serialized_message["content"])
+            message = AIMessage(content=serialized_message["content"], response_metadata=serialized_message["context"])
         else:
             raise ValueError(f"Unknown message type: {serialized_message['type']}")
         
@@ -152,20 +153,35 @@ def get_personalization_params(chat_id):
 def update_personalization_params(chat_id, chat_title, student_type, learning_style, communication_format, tone_style, reasoning_framework):
     conn = get_mysql_connection()
     cursor = conn.cursor()
+    
+    # Check if the chat_id exists
+    check_query = "SELECT COUNT(*) FROM Chat_info WHERE ChatID = %s"
+    cursor.execute(check_query, (chat_id,))
+    exists = cursor.fetchone()[0]
 
-    query = """
-        UPDATE Chat_info
-        SET 
-            Chat_title = %s,
-            Student_type = %s,
-            Learning_style = %s,
-            Communication_format = %s,
-            Tone_style = %s,
-            Reasoning_framework = %s
-        WHERE 
-            ChatID = %s
-    """
-    cursor.execute(query, (chat_title, student_type, learning_style, communication_format, tone_style, reasoning_framework, chat_id))
+    if exists:
+        # If it exists, update the existing row
+        query = """
+            UPDATE Chat_info
+            SET 
+                Chat_title = %s,
+                Student_type = %s,
+                Learning_style = %s,
+                Communication_format = %s,
+                Tone_style = %s,
+                Reasoning_framework = %s
+            WHERE 
+                ChatID = %s
+        """
+        cursor.execute(query, (chat_title, student_type, learning_style, communication_format, tone_style, reasoning_framework, chat_id))
+    else:
+        # If it does not exist, insert a new row
+        query = """
+            INSERT INTO Chat_info (ChatID, Chat_title, Student_type, Learning_style, Communication_format, Tone_style, Reasoning_framework)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """
+        cursor.execute(query, (chat_id, chat_title, student_type, learning_style, communication_format, tone_style, reasoning_framework))
+
     conn.commit()
     
     cursor.close()
@@ -206,3 +222,25 @@ def get_mentor_notes_by_course(studentid):
         notes_by_course[course] += " " + notes.strip()
     
     return notes_by_course
+
+def get_past_chats():
+    # Establish a database connection
+    connection = get_mysql_connection()
+    cursor = connection.cursor(dictionary=True)
+    
+    # SQL query to fetch all past chats
+    query = """
+    SELECT ChatID, Chat_title 
+    FROM Chat_info
+    """
+    cursor.execute(query)
+    
+    # Fetch all results
+    past_chats = cursor.fetchall()
+    
+    # Close the cursor and connection
+    cursor.close()
+    connection.close()
+    
+    return past_chats
+

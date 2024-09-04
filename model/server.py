@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 
 from app import run_model
-from ChatStoreSQL import update_personalization_params, get_personalization_params
+from ChatStoreSQL import update_personalization_params, get_personalization_params, get_past_chats, load_chat_history
 
 class Request(BaseModel):
     ChatID:str
@@ -69,6 +69,31 @@ async def get_personalization(chat_id: str):
         if not data:
             raise HTTPException(status_code=404, detail="Personalization data not found")
         return data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    
+@app.get("/get-past-chats")
+async def get_past_chats_endpoint():
+    try:
+        past_chats = get_past_chats()
+        return past_chats
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.get("/get-chat")
+async def get_chat(chat_id: str):
+    try:
+        chat_history, chat_summary = load_chat_history(chat_id)
+        
+        # Convert chat history to a dictionary format for the frontend
+        response_data = {
+            "messages": chat_history,
+            "summary": chat_summary
+        }
+        
+        return response_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

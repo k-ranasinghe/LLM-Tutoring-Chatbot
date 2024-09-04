@@ -1,39 +1,75 @@
 // src/components/Sidebar.js
 import React, { useState, useEffect } from 'react';
-import { XMarkIcon, Bars3Icon } from '@heroicons/react/24/outline';
+import { XMarkIcon, Bars3Icon, PlusCircleIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
 import axios from 'axios'
 
-function Sidebar({ isOpen, toggleSidebar, chatId }) {
+function Sidebar({ isOpen, toggleSidebar, chatId, setChatId }) {
   const [chatTitle, setChatTitle] = useState('');
   const [studentType, setStudentType] = useState('');
   const [learningStyle, setLearningStyle] = useState('');
   const [communicationFormat, setCommunicationFormat] = useState('');
   const [toneStyle, setToneStyle] = useState('');
   const [reasoningFramework, setReasoningFramework] = useState('');
+  const [pastChats, setPastChats] = useState([]);
 
   useEffect(() => {
     getPersonalization(chatId);
+    fetchPastChats(); // Fetch past chats on component mount
   }, [chatId]);
 
+  const fetchPastChats = async () => {
+    try {
+      const response = await axios.get('http://localhost:8000/get-past-chats');
+      setPastChats(response.data); // Assuming response data is an array of past chats
+    } catch (error) {
+      console.error('Error fetching past chats:', error);
+    }
+  };
+
+  const setChat = async (selectedChatId) => {
+    try {
+        setChatId(selectedChatId); // Update current chatId
+
+    } catch (error) {
+        console.error('Error loading chat:', error);
+    }
+  };
+
+  function generateRandomString(length, pastChats) {
+    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    const randomValues = new Uint8Array(length);
+    
+    do {
+        result = [];
+        window.crypto.getRandomValues(randomValues);
+        for (let i = 0; i < length; i++) {
+            result.push(charset[randomValues[i] % charset.length]);
+        }
+        result = result.join('');
+    } while (pastChats.some(chat => chat.ChatID === result));
+    
+    return result;
+  };
+
+  const handleNewChat = () => {
+    const chatId = generateRandomString(10, pastChats);
+    const chatTitle = "";
+    setChatId(chatId); 
+    setChatTitle(chatTitle); 
+    const personalizationData = {
+      chat_id: chatId,
+      chat_title: chatTitle,
+      student_type: "type1",
+      learning_style: "Verbal",
+      communication_format: "Textbook",
+      tone_style: "Neutral",
+      reasoning_framework: "Deductive",
+    };
+    savePersonalization(personalizationData);
+  };
+
   const savePersonalization = async (personalizationData) => {
-    // try {
-    //   const response = await fetch('http://localhost:8000/update-personalization', {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //     },
-    //     body: personalizationData
-    //   });
-
-    //   if (!response.ok) {
-    //     throw new Error('Failed to save personalization');
-    //   }
-
-    //   console.log('Personalization saved successfully');
-    // } catch (error) {
-    //   console.error('Error:', error);
-    // }
-
     const url = "http://localhost:8000/update-personalization";
     const postData = personalizationData;
 
@@ -82,23 +118,26 @@ function Sidebar({ isOpen, toggleSidebar, chatId }) {
 
 
   return (
-    <div className={`text-white flex-shrink-0 ${isOpen ? 'w-64' : 'w-20'} transition-all duration-300 h-full font-sans`} style={{backgroundColor:"#042f47"}}>
+    <div className={`text-white flex-shrink-0 ${isOpen ? 'w-64' : 'w-20'} transition-all duration-300 h-full font-sans overflow-y-auto`} style={{backgroundColor:"#042f47"}}>
       <div className="p-4 flex justify-between items-center">
         <h2 className={`text-xl font-bold ${isOpen ? 'block' : 'hidden'}`}>Past Chats</h2>
         <button onClick={toggleSidebar}>
           {isOpen ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
         </button>
       </div>
+      
       <div className="overflow-y-auto">
-        {/* Add your past chats here */}
+        <button onClick={handleNewChat} className="p-2 w-full text-left hover:bg-gray-700 cursor-pointer text-lg font-semibold flex items-center space-x-2"><PlusCircleIcon className="h-6 w-6 mr-2" />New Chat</button>
         <ul>
-          <li className="p-2 hover:bg-gray-700 cursor-pointer">{chatTitle}</li>
-          <li className="p-2 hover:bg-gray-700 cursor-pointer">Chat 2</li>
-          <li className="p-2 hover:bg-gray-700 cursor-pointer">Chat 3</li>
+          {pastChats.map((chat) => (
+            <li key={chat.ChatID} className="p-2 hover:bg-gray-700 cursor-pointer" onClick={() => setChat(chat.ChatID)}>
+              {chat.Chat_title || `Chat ${chat.ChatID}`}
+            </li>
+          ))}
         </ul>
       </div>
       <div className="p-4">
-        <h3 className="text-lg font-bold mb-2">Personalization</h3>
+        <h3 className="text-lg font-bold mb-2 flex items-center space-x-2"><AdjustmentsHorizontalIcon className="h-6 w-6 mr-2" />Personalization</h3>
         <div className="mb-2">
           <label className="block mb-1">Chat Title</label>
           <input 

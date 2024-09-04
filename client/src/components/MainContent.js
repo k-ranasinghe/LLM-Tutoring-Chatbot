@@ -4,7 +4,7 @@ import PromptInput from './PromptInput';
 import Chat from './Chat';
 import axios from 'axios';
 
-function MainContent({ isSidebarOpen }) {
+function MainContent({ isSidebarOpen, chatId }) {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const chatEndRef = useRef(null);
@@ -15,7 +15,7 @@ function MainContent({ isSidebarOpen }) {
 
     // Request to model
     const url = "http://localhost:8000/run-model";
-    const postData = { ChatID: "abc1", UserID: "user123", input_text: message };
+    const postData = { ChatID: chatId, UserID: "user123", input_text: message };
 
     try {
       const response = await axios.post(url, postData);
@@ -34,6 +34,43 @@ function MainContent({ isSidebarOpen }) {
 
     setIsLoading(false);
   };
+
+  const loadChat = async (selectedChatId) => {
+    try {
+      const response = await axios.get(`http://localhost:8000/get-chat?chat_id=${selectedChatId}`);
+      const chatHistory = response.data.messages; // Assuming the chat messages are returned
+  
+      // Iterate through each message in the chat history and add it to the state
+      chatHistory.forEach((msg) => {
+        if (msg.type === 'human') {
+          setMessages((prevMessages) => [
+            ...prevMessages,
+            { text: [msg.content], type: 'user' }, // Wrap the user message in an array
+          ]);
+        } else if (msg.type === 'ai') {
+          // If the bot message contains context, ensure it’s added correctly
+          const botMessage = msg.content;
+          const botContext = msg.response_metadata["context"];
+  
+          setMessages((prevMessages) => [
+            ...prevMessages,
+            { text: [botMessage, ...botContext], type: 'bot' }, // Combine bot message and context
+          ]);
+        }
+      });
+  
+    } catch (error) {
+      console.error('Error loading chat:', error);
+    }
+  };
+
+  // UseEffect to load chat messages when chatId changes
+  useEffect(() => {
+    if (chatId) {
+      setMessages([]);
+      loadChat(chatId);
+    }
+  }, [chatId]);
 
   useEffect(() => {
     // Scroll to the bottom when messages change

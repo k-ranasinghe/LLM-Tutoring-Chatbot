@@ -8,8 +8,9 @@ import time
 import warnings
 
 from chain import create_chain
-from ChatStoreSQL import save_chat_history, load_chat_history, get_instruction, get_personalization_params, get_mentor_notes_by_course
+from ChatStoreSQL import save_chat_history, load_chat_history, get_instruction, get_personalization_params, update_personalization_params, get_mentor_notes_by_course
 from ChatSummarizer import summarize_chat_history
+from TitleGenerator import generate_chat_title
 
 load_dotenv()
 os.environ["LANGCHAIN_TRACING_V2"]="true"
@@ -85,7 +86,13 @@ def run_model(ChatID, UserID, input_text):
         response_str = {"response":response, "response_time":response_time, "context":formatted_string}
 
         chat_history.append(HumanMessage(content=input_text))
-        chat_history.append(AIMessage(content=response))
+        chat_history.append(AIMessage(content=response, response_metadata={"context" : formatted_string}))
+
+        if personalization["chat_title"] == "":
+            personalization["chat_title"] = generate_chat_title(chat_history)
+            update_personalization_params(ChatID, personalization["chat_title"], personalization["student_type"], 
+                                    personalization["learning_style"], personalization["communication_format"], 
+                                    personalization["tone_style"], personalization["reasoning_framework"])
 
         chat_history = chat_history[-10:]
         new_chat_summary = summarize_chat_history(chat_summary, chat_history)
