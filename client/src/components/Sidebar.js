@@ -3,26 +3,36 @@ import React, { useState, useEffect } from 'react';
 import { XMarkIcon, Bars3Icon, PlusCircleIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
 import axios from 'axios'
 
-function Sidebar({ isOpen, toggleSidebar, chatId, setChatId }) {
+function Sidebar({ isOpen, toggleSidebar, chatId, setChatId, userId }) {
   const [chatTitle, setChatTitle] = useState('');
-  const [studentType, setStudentType] = useState('');
   const [learningStyle, setLearningStyle] = useState('');
   const [communicationFormat, setCommunicationFormat] = useState('');
   const [toneStyle, setToneStyle] = useState('');
   const [reasoningFramework, setReasoningFramework] = useState('');
   const [pastChats, setPastChats] = useState([]);
+  const [chatIDs, setChatIDs] = useState([]);
 
   useEffect(() => {
     getPersonalization(chatId);
-    fetchPastChats(); // Fetch past chats on component mount
+    fetchPastChats(userId); // Fetch past chats on component mount
+    fetchChatIDs();
   }, [chatId]);
 
-  const fetchPastChats = async () => {
+  const fetchPastChats = async (userId) => {
     try {
-      const response = await axios.get('http://localhost:8000/get-past-chats');
+      const response = await axios.get(`http://localhost:8000/get-past-chats?userId=${userId}`);
       setPastChats(response.data); // Assuming response data is an array of past chats
     } catch (error) {
       console.error('Error fetching past chats:', error);
+    }
+  };
+
+  const fetchChatIDs = async () => {
+    try {
+      const response = await axios.get("http://localhost:8000/get-chat-ids");
+      setChatIDs(response.data); // Assuming response data is an array of past chats
+    } catch (error) {
+      console.error('Error fetching chat ids:', error);
     }
   };
 
@@ -35,7 +45,7 @@ function Sidebar({ isOpen, toggleSidebar, chatId, setChatId }) {
     }
   };
 
-  function generateRandomString(length, pastChats) {
+  function generateRandomString(length, chatIDs) {
     const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let result = '';
     const randomValues = new Uint8Array(length);
@@ -47,26 +57,27 @@ function Sidebar({ isOpen, toggleSidebar, chatId, setChatId }) {
             result.push(charset[randomValues[i] % charset.length]);
         }
         result = result.join('');
-    } while (pastChats.some(chat => chat.ChatID === result));
+    } while (chatIDs.some(chat => chat === result));
     
     return result;
   };
 
   const handleNewChat = () => {
-    const chatId = generateRandomString(10, pastChats);
+    const chatId = generateRandomString(10, chatIDs);
     const chatTitle = "";
     setChatId(chatId); 
     setChatTitle(chatTitle); 
     const personalizationData = {
-      chat_id: chatId,
+      ChatID: chatId,
+      UserID: "user123",
       chat_title: chatTitle,
-      student_type: "type1",
       learning_style: "Verbal",
       communication_format: "Textbook",
       tone_style: "Neutral",
       reasoning_framework: "Deductive",
     };
     savePersonalization(personalizationData);
+    window.location.reload();
   };
 
   const savePersonalization = async (personalizationData) => {
@@ -89,7 +100,6 @@ function Sidebar({ isOpen, toggleSidebar, chatId, setChatId }) {
 
       if (response.ok) {
         setChatTitle(data.chat_title || '');
-        setStudentType(data.student_type || '');
         setLearningStyle(data.learning_style || '');
         setCommunicationFormat(data.communication_format || '');
         setToneStyle(data.tone_style || '');
@@ -104,9 +114,9 @@ function Sidebar({ isOpen, toggleSidebar, chatId, setChatId }) {
 
   const handleSave = () => {
     const personalizationData = {
-      chat_id: chatId,
+      ChatID: chatId,
+      UserID: "user123",
       chat_title: chatTitle,
-      student_type: studentType,
       learning_style: learningStyle,
       communication_format: communicationFormat,
       tone_style: toneStyle,
@@ -114,6 +124,7 @@ function Sidebar({ isOpen, toggleSidebar, chatId, setChatId }) {
     };
     console.log(personalizationData);
     savePersonalization(personalizationData);
+    window.location.reload();
   };
 
 
@@ -131,7 +142,7 @@ function Sidebar({ isOpen, toggleSidebar, chatId, setChatId }) {
         <ul>
           {pastChats.map((chat) => (
             <li key={chat.ChatID} className="p-2 hover:bg-gray-700 cursor-pointer" onClick={() => setChat(chat.ChatID)}>
-              {chat.Chat_title || `Chat ${chat.ChatID}`}
+              {chat.Chat_title || `Untitled Chat`}
             </li>
           ))}
         </ul>
@@ -146,14 +157,6 @@ function Sidebar({ isOpen, toggleSidebar, chatId, setChatId }) {
             value={chatTitle} 
             onChange={(e) => setChatTitle(e.target.value)} 
           />
-        </div>
-        <div className="mb-2">
-          <label className="block mb-1">Student Type</label>
-          <select className="w-full p-2 rounded text-black" value={studentType} onChange={(e) => setStudentType(e.target.value)}>
-            <option value="">Select</option>
-            <option value="type1">Age 10-15</option>
-            <option value="type2">Age 16-18</option>
-          </select>
         </div>
         <div className="mb-2">
           <label className="block mb-1">Learning Style</label>

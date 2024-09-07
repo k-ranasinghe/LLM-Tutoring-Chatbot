@@ -8,8 +8,9 @@ import time
 import warnings
 
 from .chain import create_chain
-from .ChatStoreSQL import save_chat_history, load_chat_history, get_instruction, get_personalization_params, get_mentor_notes_by_course
+from .ChatStoreSQL import save_chat_history, load_chat_history, get_instruction, get_personalization_params, get_mentor_notes_by_course, update_personalization_params, get_courses_and_subjects
 from .ChatSummarizer import summarize_chat_history
+from .TitleGenerator import generate_chat_title
 
 load_dotenv()
 os.environ["LANGCHAIN_TRACING_V2"]="true"
@@ -61,6 +62,26 @@ def run_model(ChatID, UserID, input_text):
         embedding=HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
     )
 
+    data = get_courses_and_subjects()
+    courses = [entry["Course"] for entry in data]
+    subjects = [entry["Subject"] for entry in data]
+
+    # Remove duplicates by converting to a set, then back to a list
+    distinct_courses = list(set(courses))
+    distinct_subjects = list(set(subjects))
+
+    # Optionally, sort the lists for better readability
+    distinct_courses.sort()
+    distinct_subjects.sort()
+
+    # Create comma-separated strings
+    courses_string = ", ".join(distinct_courses)
+    subjects_string = ", ".join(distinct_subjects)
+    # TODO: Add the courses and subjects to process chat
+
+    print("Courses:", courses_string)
+    print("Subjects:", subjects_string)
+
     chain = create_chain(vectorStore)
     personalization = get_personalization_params(ChatID)
     notes = get_mentor_notes_by_course(UserID)
@@ -85,6 +106,12 @@ def run_model(ChatID, UserID, input_text):
 
         chat_history.append(HumanMessage(content=input_text))
         chat_history.append(AIMessage(content=response))
+
+        if personalization["chat_title"] == "":
+            personalization["chat_title"] = generate_chat_title(chat_history)
+            update_personalization_params(ChatID, UserID, personalization["chat_title"],
+                                    personalization["learning_style"], personalization["communication_format"], 
+                                    personalization["tone_style"], personalization["reasoning_framework"])
 
         chat_history = chat_history[-10:]
         new_chat_summary = summarize_chat_history(chat_summary, chat_history)

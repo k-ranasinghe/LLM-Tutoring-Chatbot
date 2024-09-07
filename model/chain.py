@@ -78,8 +78,6 @@ def create_chain(vectorStore):
     ])
 
 
-# , Scope[one of 'Introduction', 'Basics', 'Lab Activity', 'Project' or 'Other'], Difficulty_level[1-5]
-
     history_aware_retriever = create_history_aware_retriever(
         llm=model,
         retriever=self_query_retriever,

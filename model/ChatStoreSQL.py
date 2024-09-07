@@ -1,5 +1,6 @@
 import os
 import json
+import datetime
 import mysql.connector
 from langchain_core.messages import HumanMessage, AIMessage
 
@@ -52,10 +53,17 @@ def save_chat_history(ChatID, UserID, chat_history, chat_summary):
     serialized_history = serialize_chat_history(chat_history)
     
     cursor.execute("""
-        INSERT INTO chat_sessions (ChatID, UserID, chat_history, chat_summary)
-        VALUES (%s, %s, %s, %s)
+        INSERT INTO chat_data (ChatID, chat_history, chat_summary)
+        VALUES (%s, %s, %s)
         ON DUPLICATE KEY UPDATE chat_history = %s, chat_summary = %s
-    """, (ChatID, UserID, serialized_history, chat_summary, serialized_history, chat_summary))
+    """, (ChatID, serialized_history, chat_summary, serialized_history, chat_summary))
+
+    # Insert or update `User_chats` table
+    cursor.execute("""
+        INSERT INTO user_chats (ChatID, UserID, Timestamp)
+        VALUES (%s, %s, NOW())
+        ON DUPLICATE KEY UPDATE Timestamp = NOW()
+    """, (ChatID, UserID))
     
     connection.commit()
     cursor.close()
@@ -66,7 +74,7 @@ def load_chat_history(ChatID):
     connection = get_mysql_connection()
     cursor = connection.cursor()
     
-    cursor.execute("SELECT chat_history, chat_summary FROM chat_sessions WHERE ChatID = %s", (ChatID,))
+    cursor.execute("SELECT chat_history, chat_summary FROM chat_data WHERE ChatID = %s", (ChatID,))
     result = cursor.fetchone()
     
     if result:
@@ -81,21 +89,6 @@ def load_chat_history(ChatID):
     
     return chat_history, chat_summary
 
-# Function to save chat summary to MySQL
-def save_chat_summary(session_id, chat_summary):
-    connection = get_mysql_connection()
-    cursor = connection.cursor()
-    
-    cursor.execute("""
-        UPDATE chat_sessions
-        SET chat_summary = %s
-        WHERE session_id = %s
-    """, (chat_summary, session_id))
-    
-    connection.commit()
-    cursor.close()
-    connection.close()
-
 
 def get_instruction(parameter):
     connection = get_mysql_connection()
@@ -104,7 +97,7 @@ def get_instruction(parameter):
     # Execute the query with the given parameters
     cursor.execute("""
     SELECT instruction 
-    FROM PersonalizationInstructions 
+    FROM Personalization_instructions 
     WHERE parameter = %s
     """, (parameter,))
 
@@ -118,7 +111,7 @@ def get_instruction(parameter):
     return result['instruction']
 
 
-def get_personalization_params(chat_id):
+def get_personalization_params(ChatID):
     # Connect to the MySQL database
     conn = get_mysql_connection()
     cursor = conn.cursor(dictionary=True)
@@ -129,7 +122,7 @@ def get_personalization_params(chat_id):
     FROM Chat_info 
     WHERE ChatID = %s
     """
-    cursor.execute(query, (chat_id,))
+    cursor.execute(query, (ChatID,))
     result = cursor.fetchone()
 
     # Close the cursor and connection
@@ -148,18 +141,49 @@ def get_personalization_params(chat_id):
         }
     else:
         return {}
-    
 
-def update_personalization_params(chat_id, chat_title, student_type, learning_style, communication_format, tone_style, reasoning_framework):
+
+def calculate_student_type(dob):
+    # Calculate the user's age based on DOB
+    today = datetime.date.today()
+    birthdate = dob
+    age = today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
+    
+    # Determine student type based on age
+    if 10 <= age <= 15:
+        return "type1"
+    elif 16 <= age <= 18:
+        return "type2"
+    else:
+        return None  # For users outside the 10-18 range, no specific type
+
+def update_personalization_params(chat_id, UserID, chat_title, learning_style, communication_format, tone_style, reasoning_framework):
     conn = get_mysql_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Get the user's DOB from the user_data table
+    cursor.execute("SELECT Date_of_birth FROM user_data WHERE UserID = %s", (UserID,))
+    user_data = cursor.fetchone()
+
+    if not user_data or not user_data['Date_of_birth']:
+        raise ValueError(f"No date of birth found for UserID: {UserID}")
+
+    # Calculate the student type based on DOB
+    dob = user_data['Date_of_birth']
+    student_type = calculate_student_type(dob)
+    
+    if not student_type:
+        raise ValueError(f"UserID: {UserID} is outside the valid student age range (10-18).")
+    
+    cursor.close()
     cursor = conn.cursor()
     
     # Check if the chat_id exists
     check_query = "SELECT COUNT(*) FROM Chat_info WHERE ChatID = %s"
     cursor.execute(check_query, (chat_id,))
-    exists = cursor.fetchone()[0]
+    exists = cursor.fetchone()
 
-    if exists:
+    if exists[0] > 0:
         # If it exists, update the existing row
         query = """
             UPDATE Chat_info
@@ -181,6 +205,13 @@ def update_personalization_params(chat_id, chat_title, student_type, learning_st
             VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
         cursor.execute(query, (chat_id, chat_title, student_type, learning_style, communication_format, tone_style, reasoning_framework))
+
+    # Insert or update User_chats table
+    cursor.execute("""
+        INSERT INTO user_chats (ChatID, UserID, Timestamp)
+        VALUES (%s, %s, NOW())
+        ON DUPLICATE KEY UPDATE Timestamp = NOW()
+    """, (chat_id, UserID))
 
     conn.commit()
     
@@ -211,6 +242,9 @@ def get_mentor_notes_by_course(studentid):
     # Initialize a dictionary to hold concatenated notes by course
     notes_by_course = {}
     
+    # Flag to check if any notes were found
+    notes_found = False
+    
     for result in results:
         course = result['course']
         notes = result['notes']
@@ -220,20 +254,43 @@ def get_mentor_notes_by_course(studentid):
         
         # Concatenate notes with a space
         notes_by_course[course] += " " + notes.strip()
+        
+        # Update the flag if notes are found
+        notes_found = True
+    
+    # If no notes were found, add a default message for each course
+    if not notes_found:
+        # Query to get a list of all courses for the given studentid
+        query_courses = """
+        SELECT DISTINCT course
+        FROM mentor_notes
+        """
+        connection = get_mysql_connection()
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute(query_courses)
+        courses = cursor.fetchall()
+        cursor.close()
+        
+        for course in [row['course'] for row in courses]:
+            notes_by_course[course] = "there are no available notes."
     
     return notes_by_course
 
-def get_past_chats():
+
+def get_past_chats(user_id):
     # Establish a database connection
     connection = get_mysql_connection()
     cursor = connection.cursor(dictionary=True)
     
-    # SQL query to fetch all past chats
+    # Fetching past chats with timestamps from `User_chats` and `Chat_info` for a specific UserID
     query = """
-    SELECT ChatID, Chat_title 
-    FROM Chat_info
+    SELECT uc.ChatID, ci.Chat_title, uc.Timestamp
+    FROM User_chats uc
+    JOIN Chat_info ci ON uc.ChatID = ci.ChatID
+    WHERE uc.UserID = %s
+    ORDER BY uc.Timestamp DESC
     """
-    cursor.execute(query)
+    cursor.execute(query, (user_id,))
     
     # Fetch all results
     past_chats = cursor.fetchall()
@@ -244,3 +301,49 @@ def get_past_chats():
     
     return past_chats
 
+
+def get_chat_ids():
+    # Establish a database connection
+    connection = get_mysql_connection()
+    cursor = connection.cursor(dictionary=True)
+    
+    # SQL query to get distinct ChatID values from User_chats
+    query = """
+    SELECT DISTINCT ChatID
+    FROM User_chats
+    """
+    
+    cursor.execute(query)
+    
+    # Fetch all results
+    chat_ids = cursor.fetchall()
+    
+    # Close the cursor and connection
+    cursor.close()
+    connection.close()
+    
+    # Return a list of ChatID values
+    return [row['ChatID'] for row in chat_ids]
+
+
+def get_courses_and_subjects():
+    # Establish a database connection
+    connection = get_mysql_connection()
+    cursor = connection.cursor(dictionary=True)
+    
+    # SQL query to get distinct courses and subjects
+    query = """
+    SELECT DISTINCT Course, Subject 
+    FROM Curriculum
+    """
+    
+    cursor.execute(query)
+    
+    # Fetch all results
+    distinct_courses_and_subjects = cursor.fetchall()
+    
+    # Close the cursor and connection
+    cursor.close()
+    connection.close()
+    
+    return distinct_courses_and_subjects

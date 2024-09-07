@@ -1,10 +1,11 @@
 from fastapi import FastAPI, HTTPException
+from typing import List
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 
 
 from app import run_model
-from ChatStoreSQL import update_personalization_params, get_personalization_params, get_past_chats, load_chat_history
+from ChatStoreSQL import update_personalization_params, get_personalization_params, get_past_chats, get_chat_ids, load_chat_history
 
 class Request(BaseModel):
     ChatID:str
@@ -13,9 +14,9 @@ class Request(BaseModel):
 
 
 class PersonalizationData(BaseModel):
-    chat_id: str
+    ChatID: str
+    UserID: str
     chat_title: str
-    student_type: str
     learning_style: str
     communication_format: str
     tone_style: str
@@ -49,9 +50,9 @@ async def process_input(req:Request):
 async def update_personalization(data: PersonalizationData):
     try:
         update_personalization_params(
-            data.chat_id, 
-            data.chat_title, 
-            data.student_type, 
+            data.ChatID, 
+            data.UserID, 
+            data.chat_title,  
             data.learning_style, 
             data.communication_format, 
             data.tone_style, 
@@ -74,13 +75,22 @@ async def get_personalization(chat_id: str):
     
     
 @app.get("/get-past-chats")
-async def get_past_chats_endpoint():
+async def get_past_chats_endpoint(userId: str):
     try:
-        past_chats = get_past_chats()
+        past_chats = get_past_chats(userId)
         return past_chats
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
+
+@app.get("/get-chat-ids", response_model=List[str])
+async def fetch_chat_ids():
+    try:
+        chat_ids = get_chat_ids()  # Call the synchronous function here
+        return chat_ids
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/get-chat")
 async def get_chat(chat_id: str):
