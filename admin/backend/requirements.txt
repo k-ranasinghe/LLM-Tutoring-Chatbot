@@ -4,6 +4,7 @@ django-cors-headers
 librosa
 torch
 openai-whisper
+groq
 pandas
 langchain
 frontend
@@ -19,4 +20,10 @@ python-dotenv
 pymupdf
 sentence-transformers
 unstructured
+python-docx
+mysql-connector-python
+langchain_huggingface
+pytesseract
+markdown
+pypandoc
 python-docx

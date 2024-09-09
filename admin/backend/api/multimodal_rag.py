@@ -5,8 +5,10 @@ import fitz
 import google.generativeai as genai
 import PIL.Image
 import pandas as pd
+from groq import Groq
 import cv2
 from PIL import Image
+import pytesseract
 from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain_huggingface import HuggingFaceEmbeddings
 from pinecone import Pinecone, ServerlessSpec
@@ -21,27 +23,39 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="transformers")
 
 # Load environment variables from .env file
 load_dotenv()
+client = Groq(api_key=os.getenv('GROQ_API_KEY'))
+
+######################### AUDIO ##########################
 
 def transcribe_audio_files(files_with_names, course, subject):
     documents = []
 
-    model = whisper.load_model("base")
-
     for file, file_name in files_with_names:
         # Convert the NumPy array back to a suitable format for Whisper if needed
         # Here, we assume that the model can process raw audio data directly
-        result = model.transcribe(file)
-        transcription = result["text"]
+
+        transcription = client.audio.transcriptions.create(
+                file=(file_name, file), # Required audio file
+                model="distil-whisper-large-v3-en", # Required model to use for transcription
+                prompt="Specify context or spelling",  # Optional
+                response_format="json",  # Optional
+                language="en",  # Optional
+                temperature=0.0  # Optional
+        )
+
+        transcription = transcription.text
+        file_id, file_name = file_name.split('-', 1)
 
         document = Document(
             page_content=transcription,
-            metadata={"course": course, "subject": subject, "format": "audio", "source": file_name}  # Adjust source if needed
+            metadata={"course": course, "subject": subject, "format": "audio", "source": file_name, "id": int(file_id)}  # Adjust source if needed
         )
 
         documents.append(document)
 
     return documents
 
+######################### IMAGES ##########################
 
 def extract_images_from_pdf(pdf_path, output_dir):
     # Open the PDF file
@@ -86,7 +100,7 @@ def process_all_pdfs(input_dir, output_dir):
 
 # Step 1: Generate Captions for All Images in Output Directory
 def generate_captions_for_images(output_dir):
-    genai.configure(api_key=os.getenv('GOOGLE_API_'))
+    genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
     model = genai.GenerativeModel('gemini-1.5-flash')
 
     captions = []
@@ -99,12 +113,17 @@ def generate_captions_for_images(output_dir):
         # Ensure it's a file (not a subdirectory) and an image
         if os.path.isfile(image_path) and image_filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp')):
             img = PIL.Image.open(image_path)
+            initial_caption = pytesseract.image_to_string(img).strip()
+            
             response = model.generate_content(img)
-            caption = response.text.strip()  # Clean up the caption text
+            model_caption = response.text.strip()  # Clean up the caption text
+
+            combined_caption = (f"Caption by pytesseract:\n{initial_caption}\n\n"
+                        f"Caption by model:\n{model_caption}")
 
             # Store the caption along with image reference
-            captions.append((image_filename, caption))
-        if i >= 15:
+            captions.append((image_filename, combined_caption))
+        if i >= 10:
             break
     return captions
 
@@ -119,20 +138,17 @@ def create_documents_from_captions(captions, course, subject):
         source_file = '_'.join(parts[:-3])  # This extracts the source file name
         page_number = parts[-3]  # This extracts '1000' from 'page_1000_img_1.png'
         img_number = parts[-1].split('.')[0]  # This extracts '1' from 'page_1000_img_1.png'
+        file_id, file_name = source_file.split('-', 1)
 
         document = Document(
             page_content=caption,
-            metadata={"course": course, "subject": subject, "format": "image", "source": source_file, "page": int(page_number), "img": int(img_number)}
+            metadata={"course": course, "subject": subject, "format": "image", "source": file_name, "page": int(page_number), "img": int(img_number), "id": int(file_id)}
         )
         documents.append(document)
 
     return documents
 
-
-
-
-
-
+######################### VIDEOS ##########################
 
 def extract_frames_from_video(video_path, output_dir, desired_fps=None):
     # Open the video file
@@ -151,7 +167,7 @@ def extract_frames_from_video(video_path, output_dir, desired_fps=None):
     video_filename = os.path.splitext(os.path.basename(video_path))[0]
 
     frame_count = 0
-    extracted_count = 0
+    extracted_count = 0  
     while True:
         # Read the next frame
         ret, frame = video_capture.read()
@@ -182,7 +198,7 @@ def extract_frames_from_video(video_path, output_dir, desired_fps=None):
 
 def transcribe_frames(input_dir):
     model_name = "gemini-1.5-flash"
-    genai.configure(api_key=os.getenv('GOOGLE_API_'))
+    genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
     model = genai.GenerativeModel(model_name)
 
     transcriptions = {}
@@ -196,15 +212,19 @@ def transcribe_frames(input_dir):
 
             # Open the image
             img = PIL.Image.open(file_path)
+            initial_caption = pytesseract.image_to_string(img).strip()
 
             # Generate content
             response = model.generate_content(img)
-            transcription = response.text
+            model_caption = response.text
+
+            combined_caption = (f"Caption by pytesseract:\n{initial_caption}\n\n"
+                        f"Caption by model:\n{model_caption}")
 
             # Store the transcription
-            transcriptions[filename] = transcription
+            transcriptions[filename] = combined_caption
 
-        if i >= 15:
+        if i >= 10:
             break
 
     return transcriptions
@@ -220,6 +240,7 @@ def create_documents_from_frames(captions, course, subject):
         video_filename = parts[0]  # Extract the source video file name
         timestamp = parts[-3]  # Extract timestamp
         frame_number = parts[-1].split('.')[0]  # Extract frame number
+        file_id, file_name = os.path.basename(image_filename).split('-', 1)
 
         document = Document(
             page_content=caption,
@@ -227,9 +248,10 @@ def create_documents_from_frames(captions, course, subject):
                 "course": course, 
                 "subject": subject, 
                 "format": "video",
-                "source": video_filename,
+                "source": file_name,
                 "timestamp": timestamp,
-                "frame": int(frame_number)
+                "frame": int(frame_number),
+                "id": int(file_id)
             }
         )
         documents.append(document)
@@ -260,6 +282,8 @@ def process_videos_in_directory(input_dir, output_dir_base, frame_rate, course, 
 
     return documents
 
+######################### DOCS ##########################
+
 
 from langchain_community.document_loaders import PyPDFLoader, PyPDFDirectoryLoader, UnstructuredEPubLoader, UnstructuredExcelLoader, NotebookLoader, PythonLoader, SQLDatabaseLoader, UnstructuredXMLLoader
 from langchain_community.document_loaders import (
@@ -280,7 +304,7 @@ def text_preprocess(input_dir):
     word_loader = DirectoryLoader(input_dir, glob="*.docx", loader_cls=UnstructuredWordDocumentLoader)
     text_loader = DirectoryLoader(input_dir, glob="*.txt", loader_cls=TextLoader)
     html_loader = DirectoryLoader(input_dir, glob="*.html", loader_cls=UnstructuredHTMLLoader)
-    markdown_loader = DirectoryLoader(input_dir, glob="*.c", loader_cls=UnstructuredMarkdownLoader)
+    markdown_loader = DirectoryLoader(input_dir, glob="*.md", loader_cls=UnstructuredMarkdownLoader)
     epub_loader = DirectoryLoader(input_dir, glob="*.epub", loader_cls=UnstructuredEPubLoader)
     powerpoint_loader = DirectoryLoader(input_dir, glob="*.pptx", loader_cls=UnstructuredPowerPointLoader)
     csv_loader = DirectoryLoader(input_dir, glob="*.csv", loader_cls=CSVLoader)
@@ -328,7 +352,7 @@ def update_metadata(documents, course, subject):
 
         # Extract the filename from the file path
         file_path = doc.metadata.get("source", "")
-        file_name = os.path.basename(file_path)
+        file_id, file_name = os.path.basename(file_path).split('-', 1)
 
         # Modify metadata as needed
         updated_metadata['course'] = course 
@@ -336,6 +360,7 @@ def update_metadata(documents, course, subject):
         updated_metadata['format'] = 'text'
         updated_metadata['source'] = file_name
         updated_metadata['page'] = doc.metadata.get("page", "")
+        updated_metadata['id'] = int(file_id)
 
 
         # Create a new document with updated metadata
@@ -361,3 +386,28 @@ def save_doc(documents):
 
     # Connect to the index
     index = pc.describe_index(name=index_name)
+
+
+def process_mentor_files(input_dir):
+    model_name = "gemini-1.5-flash"
+    genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
+    model = genai.GenerativeModel(model_name)
+
+    preproccessed_text = text_preprocess(input_dir)
+    transcriptions = {}
+
+    for filename in sorted(os.listdir(input_dir)):
+        if filename.endswith((".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".webp")):
+            file_path = os.path.join(input_dir, filename)
+
+            # Open the image
+            img = PIL.Image.open(file_path)
+
+            # Generate content
+            response = model.generate_content(img)
+            model_caption = response.text
+
+            # Store the transcription
+            transcriptions[filename] = model_caption
+
+    return transcriptions, preproccessed_text

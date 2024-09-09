@@ -12,6 +12,8 @@ bot/bot/__pycache__
 model/__pycache__
 bot/whatsappbot/__pycache__
 assets/
+admin/backend/lectures/
+admin/backend/static/
 /.pnp
 .pnp.js
 

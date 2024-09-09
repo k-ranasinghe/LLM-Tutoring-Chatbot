@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ManageFiles from './pages/ManageFiles';
 import UploadFiles from './pages/UploadFiles';
+import MentorNotes from './pages/MentorNotes';
 import SideBar from './components/SideBar';
 import { Box } from '@mui/material';  // Import Box for layout styling
 
@@ -14,6 +15,7 @@ function App() {
             <Route path="/" element={<UploadFiles />} /> {/* Default Route */}
             <Route path="/upload" element={<UploadFiles />} /> {/* Route for UploadFiles */}
             <Route path="/manage" element={<ManageFiles />} /> {/* Route for ManageFiles */}
+            <Route path="/notes" element={<MentorNotes />} /> {/* Route for MentorNotes */}
           </Routes>
         </Box>
       </Box>

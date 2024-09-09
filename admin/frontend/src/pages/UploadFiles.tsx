@@ -11,10 +11,14 @@ import {
   ListItem,
   ListItemText,
   TextField,
+  Tooltip, 
+  FormControl, 
+  InputLabel, 
+  Select, 
+  MenuItem,
 } from "@mui/material";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import DeleteIcon from "@mui/icons-material/Delete";
-
 
 const UploadFiles: React.FC = () => {
   const [files, setFiles] = useState<File[]>([]);
@@ -23,25 +27,12 @@ const UploadFiles: React.FC = () => {
   const [subject, setSubject] = useState<string>(""); // State for subject
   const [recentFiles, setRecentFiles] = useState<any[]>([]);
 
-  const [dummyFiles] = useState([
-    { id: 1, name: 'file1.pdf', uploadedAt: '2024-08-20' },
-    { id: 2, name: 'file2.docx', uploadedAt: '2024-08-21' },
-    { id: 3, name: 'file3.xlsx', uploadedAt: '2024-08-22' },
-    { id: 4, name: 'file4.jpg', uploadedAt: '2024-08-23' },
-    { id: 5, name: 'file5.png', uploadedAt: '2024-08-24' },
-    { id: 6, name: 'file6.txt', uploadedAt: '2024-08-25' },
-    { id: 7, name: 'file7.csv', uploadedAt: '2024-08-26' },
-    { id: 8, name: 'file8.mp4', uploadedAt: '2024-08-27' },
-    { id: 9, name: 'file9.zip', uploadedAt: '2024-08-28' },
-    { id: 10, name: 'file10.pptx', uploadedAt: '2024-08-29' },
-  ]);
-
   // State for search query
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Filtered files based on search query
-  const filteredFiles = dummyFiles.filter((file) =>
-    file.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredFiles = recentFiles.filter((file) =>
+    file.file_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,7 +55,7 @@ const UploadFiles: React.FC = () => {
 
     try {
       const response = await fetch(
-        "http://127.0.0.1:8001/api/material/upload/",
+        "http://127.0.0.1:8000/api/material/upload/",
         {
           method: "POST",
           body: formData,
@@ -92,24 +83,45 @@ const UploadFiles: React.FC = () => {
 
   useEffect(() => {
     fetchRecentFiles();
-  }, [])
+  }, []);
 
   const fetchRecentFiles = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/material/recent/');
+      const response = await fetch("http://127.0.0.1:8000/api/material/view/");
       if (!response.ok) {
-        throw new Error('Failed to fetch recent files');
+        throw new Error("Failed to fetch recent files");
       }
 
       const data = await response.json();
-      setRecentFiles(data.slice(0, 5)); // Show only 5 most recent files
+      setRecentFiles(data.reverse()); // Show only 5 most recent files
     } catch (error) {
-      console.error('Error fetching recent files:', error);
+      console.error("Error fetching recent files:", error);
     }
   };
 
   const handleFileRemove = (index: number) => {
     setFiles(files.filter((_, i) => i !== index));
+  };
+
+  const handleDelete = async (fileId: number) => {
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/api/material/delete/${fileId}/`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete the file");
+      }
+
+      alert("File deleted successfully");
+      fetchRecentFiles(); // Refresh the list of recent files
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      alert("Error deleting file");
+    }
   };
 
   return (
@@ -118,7 +130,73 @@ const UploadFiles: React.FC = () => {
         <Typography variant="h4" gutterBottom>
           Upload Files
         </Typography>
-        <Grid container spacing={2}>
+        <Box mt={4} p={3} border={1} borderRadius="8px" bgcolor="#f9f9f9">
+          <Typography variant="h5" gutterBottom>
+            Supported File Formats
+          </Typography>
+          
+          <Box mb={3}>
+            <Typography variant="h6" color="primary" gutterBottom>
+              Audio Formats:
+            </Typography>
+            <Typography variant="body1" paragraph style={{ marginBottom: '0px' }}>
+              Our platform supports a wide range of audio formats, ensuring compatibility with most audio files. You can upload and play files in the following formats:
+            </Typography>
+            <Typography variant="body1" paragraph>
+              <Tooltip title='MPEG-4 Audio' arrow><strong style={{ marginRight: '20px' }}>.m4a</strong></Tooltip>
+              <Tooltip title='MPEG-1 Audio Layer III' arrow><strong style={{ marginRight: '20px' }}>.mp3</strong></Tooltip>
+              <Tooltip title='Waveform Audio File Format' arrow><strong style={{ marginRight: '20px' }}>.wav</strong></Tooltip>
+              <Tooltip title='Ogg Vorbis' arrow><strong style={{ marginRight: '20px' }}>.ogg</strong></Tooltip>
+              <Tooltip title='Opus Audio' arrow><strong style={{ marginRight: '20px' }}>.opus</strong></Tooltip>
+              <Tooltip title='Free Lossless Audio Codec' arrow><strong style={{ marginRight: '20px' }}>.flac</strong></Tooltip>
+              <Tooltip title='MPEG-4 Video' arrow><strong style={{ marginRight: '20px' }}>.mp4</strong></Tooltip>
+              <Tooltip title='WebM Audio (also include video)' arrow><strong style={{ marginRight: '20px' }}>.webm</strong></Tooltip>
+              <Tooltip title='MPEG Audio (also include video)' arrow><strong style={{ marginRight: '20px' }}>.mpeg</strong></Tooltip>
+            </Typography>
+          </Box>
+          
+          <Box mb={3}>
+            <Typography variant="h6" color="secondary" gutterBottom>
+              Video Formats:
+            </Typography>
+            <Typography variant="body1" paragraph style={{ marginBottom: '0px' }}>
+              Our system also supports various video formats, providing flexibility for different types of video content. The following formats are supported:
+            </Typography>
+            <Typography variant="body1" paragraph>
+              <Tooltip title='MPEG-4 Video' arrow><strong style={{ marginRight: '20px' }}>.mp4</strong></Tooltip>
+              <Tooltip title='WebM Video' arrow><strong style={{ marginRight: '20px' }}>.webm</strong></Tooltip>
+              <Tooltip title='Audio Video Interleave' arrow><strong style={{ marginRight: '20px' }}>.avi</strong></Tooltip>
+              <Tooltip title='QuickTime Movie' arrow><strong style={{ marginRight: '20px' }}>.mov</strong></Tooltip>
+              <Tooltip title='Matroska Video' arrow><strong style={{ marginRight: '20px' }}>.mkv</strong></Tooltip>
+              <Tooltip title='MPEG Video' arrow><strong style={{ marginRight: '20px' }}>.mpeg</strong></Tooltip>
+              <Tooltip title='Ogg Theora' arrow><strong style={{ marginRight: '20px' }}>.ogg</strong></Tooltip>
+            </Typography>
+          </Box>
+          
+          <Box>
+            <Typography variant="h6" color="textPrimary" gutterBottom>
+              Text Formats:
+            </Typography>
+            <Typography variant="body1" paragraph style={{ marginBottom: '0px' }}>
+              For document and text file uploads, we support the following formats, allowing for a broad range of document types and structures:
+            </Typography>
+            <Typography variant="body1" paragraph>
+              <Tooltip title='Portable Document Format' arrow><strong style={{ marginRight: '20px' }}>.pdf</strong></Tooltip>
+              <Tooltip title='Microsoft Word Document' arrow><strong style={{ marginRight: '20px' }}>.docx</strong></Tooltip>
+              <Tooltip title='Microsoft PowerPoint Presentation' arrow><strong style={{ marginRight: '20px' }}>.pptx</strong></Tooltip>
+              <Tooltip title='Plain Text File' arrow><strong style={{ marginRight: '20px' }}>.txt</strong></Tooltip>
+              <Tooltip title='Microsoft Excel Spreadsheet' arrow><strong style={{ marginRight: '20px' }}>.xlsx</strong></Tooltip>
+              <Tooltip title='Comma-Separated Values' arrow><strong style={{ marginRight: '20px' }}>.csv</strong></Tooltip>
+              <Tooltip title='Jupyter Notebook' arrow><strong style={{ marginRight: '20px' }}>.ipynb</strong></Tooltip>
+              <Tooltip title='Python Script' arrow><strong style={{ marginRight: '20px' }}>.py</strong></Tooltip>
+              <Tooltip title='HyperText Markup Language' arrow><strong style={{ marginRight: '20px' }}>.html</strong></Tooltip>
+              <Tooltip title='Markdown File' arrow><strong style={{ marginRight: '20px' }}>.md</strong></Tooltip>
+              <Tooltip title='Electronic Publication' arrow><strong style={{ marginRight: '20px' }}>.epub</strong></Tooltip>
+              <Tooltip title='Extensible Markup Language' arrow><strong style={{ marginRight: '20px' }}>.xml</strong></Tooltip>
+            </Typography>
+          </Box>
+        </Box>
+        <Grid container spacing={2} style={{ marginTop: '20px' }}>
           <Grid item xs={12}>
             <Button
               variant="contained"
@@ -162,29 +240,56 @@ const UploadFiles: React.FC = () => {
           )}
         </Box>
         <Box mt={2}>
-          <TextField
-            label="Course"
-            variant="outlined"
-            fullWidth
-            margin="normal"
-            value={course}
-            onChange={(e) => setCourse(e.target.value)}
-          />
-          <TextField
-            label="Subject"
-            variant="outlined"
-            fullWidth
-            margin="normal"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-          />
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth variant="outlined" size="small">
+                <InputLabel>Course</InputLabel>
+                <Select
+                  value={course}
+                  onChange={(e) => setCourse(e.target.value as string)}
+                  label="Course"
+                  style={{ fontSize: '1.1rem' }}
+                >
+                  <MenuItem value="">Select a course</MenuItem>
+                  <MenuItem value="Programming & Electronics">Programming</MenuItem>
+                  <MenuItem value="Programming & Electronics">Electronics</MenuItem>
+                  <MenuItem value="3D Design & Manufacturing">3D Design</MenuItem>
+                  <MenuItem value="3D Design & Manufacturing">Manufacturing</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth variant="outlined" size="small">
+                <InputLabel>Subject</InputLabel>
+                <Select
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value as string)}
+                  label="Subject"
+                  style={{ fontSize: '1.1rem' }}
+                >
+                  <MenuItem value="">Select a subject</MenuItem>
+                  <MenuItem value="3D Design">3D Design - I</MenuItem>
+                  <MenuItem value="3D Design">3D Design - II</MenuItem>
+                  <MenuItem value="Manufacturing">Manufacturing - I</MenuItem>
+                  <MenuItem value="Manufacturing">Manufacturing - II</MenuItem>
+                  <MenuItem value="Electronics">Electronics - I</MenuItem>
+                  <MenuItem value="Electronics">Electronics - II</MenuItem>
+                  <MenuItem value="Embedded Systems">Embedded Systems - I</MenuItem>
+                  <MenuItem value="Embedded Systems">Embedded Systems - II</MenuItem>
+                  <MenuItem value="Programming and Algorithms">Programming and Algorithms - I</MenuItem>
+                  <MenuItem value="Programming and Algorithms">Programming and Algorithms - II</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
         </Box>
         <Box mt={2}>
           <Button
             variant="contained"
             color="primary"
             onClick={handleFileUpload}
-            disabled={files.length === 0 || uploading}
+            disabled={files.length === 0 || uploading || !course || !subject}
             fullWidth
           >
             {uploading ? <CircularProgress size={24} /> : "Upload Files"}
@@ -193,75 +298,54 @@ const UploadFiles: React.FC = () => {
       </Container>
 
       <Container>
-      <Box mt={4}>
-        <Typography variant="h6" gutterBottom>
-          Uploaded Files
-        </Typography>
-        <TextField
-          label="Search Files"
-          variant="outlined"
-          fullWidth
-          margin="normal"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        <Box
-          sx={{
-            maxHeight: 500, // Adjust height for scrollable area
-            overflowY: 'auto', // Enable vertical scroll
-            border: '1px solid #ddd', // Optional: Add border for visual distinction
-            borderRadius: 1, // Optional: Add rounded corners
-            padding: 2, // Optional: Add padding inside the scrollable area
-          }}
-        >
-          <List>
-            {filteredFiles.map((file) => (
-              <ListItem
-                key={file.id}
-                sx={{
-                  border: '1px solid #ddd',
-                  borderRadius: 1,
-                  marginBottom: 1,
-                }}
-              >
-                <ListItemText
-                  primary={file.name}
-                  secondary={`Uploaded on: ${file.uploadedAt}`}
-                />
-                <IconButton edge="end" aria-label="delete">
-                  <DeleteIcon />
-                </IconButton>
-              </ListItem>
-            ))}
-          </List>
-        </Box>
-      </Box>
-    </Container>
-      {/* <Container>
         <Box mt={4}>
           <Typography variant="h6" gutterBottom>
-            Recent Uploaded Files
+            Uploaded Files
           </Typography>
-          <List>
-            {recentFiles.map((file, index) => (
-              <ListItem key={index}>
-                <ListItemText
-                  primary={file.file_name}
-                  secondary={file.uploaded_at}
-                />
-              </ListItem>
-            ))}
-          </List>
-          <Button
+          <TextField
+            label="Search Files"
             variant="outlined"
-            color="primary"
-            onClick={() => (window.location.href = "/manage")}
-            sx={{ mt: 2 }}
+            fullWidth
+            margin="normal"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <Box
+            sx={{
+              maxHeight: 500, // Adjust height for scrollable area
+              overflowY: "auto", // Enable vertical scroll
+              border: "1px solid #ddd", // Optional: Add border for visual distinction
+              borderRadius: 1, // Optional: Add rounded corners
+              padding: 2, // Optional: Add padding inside the scrollable area
+            }}
           >
-            View All Files
-          </Button>
+            <List>
+              {filteredFiles.map((file) => (
+                <ListItem
+                  key={file.id}
+                  sx={{
+                    border: "1px solid #ddd",
+                    borderRadius: 1,
+                    marginBottom: 1,
+                  }}
+                >
+                  <ListItemText
+                    primary={file.file_name}
+                    secondary={`Uploaded on: ${file.uploaded_at.slice(0, 10)}`}
+                  />
+                  <IconButton
+                    edge="end"
+                    aria-label="delete"
+                    onClick={() => handleDelete(file.id)}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </ListItem>
+              ))}
+            </List>
+          </Box>
         </Box>
-      </Container> */}
+      </Container>
     </>
   );
 };

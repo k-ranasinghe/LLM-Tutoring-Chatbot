@@ -20,6 +20,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SchoolIcon from '@mui/icons-material/School';
+import ManageHistoryIcon from '@mui/icons-material/ManageHistory';
 import { useNavigate } from 'react-router-dom';  // Import useNavigate for routing
 
 const drawerWidth = 240;
@@ -108,7 +109,8 @@ export default function SideBar() {
   // Navigation items for the admin panel
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-    { text: 'Students', icon: <SchoolIcon />, path: '/students' },
+    { text: 'Manage Uploads', icon: <ManageHistoryIcon />, path: '/manage' },
+    { text: 'Mentor Notes', icon: <SchoolIcon />, path: '/notes' },
     { text: 'Teachers', icon: <PeopleIcon />, path: '/teachers' },
     { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
   ];
