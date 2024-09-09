@@ -56,7 +56,7 @@ const MentorNotes: React.FC = () => {
 
         try {
             const response = await fetch(
-                "http://127.0.0.1:8000/api/material/notes/",
+                "http://127.0.0.1:8001/api/material/notes/",
                 {
                     method: "POST",
                     body: formData,
@@ -203,10 +203,10 @@ const MentorNotes: React.FC = () => {
                         style={{ fontSize: '1.1rem' }}
                     >
                         <MenuItem value="">Select a course</MenuItem>
-                        <MenuItem value="Programming & Electronics">Programming</MenuItem>
-                        <MenuItem value="Programming & Electronics">Electronics</MenuItem>
-                        <MenuItem value="3D Design & Manufacturing">3D Design</MenuItem>
-                        <MenuItem value="3D Design & Manufacturing">Manufacturing</MenuItem>
+                        <MenuItem value="Programming">Programming</MenuItem>
+                        <MenuItem value="Electronics">Electronics</MenuItem>
+                        <MenuItem value="3D Design">3D Design</MenuItem>
+                        <MenuItem value="Manufacturing">Manufacturing</MenuItem>
                     </Select>
                 </FormControl>
             </Box>
