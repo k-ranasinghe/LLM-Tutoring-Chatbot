@@ -19,7 +19,7 @@ groq_api_key=os.getenv('GROQ_API_KEY')
 openai_api_key = os.getenv('OPENAI_API_KEY')
 
 def create_chain(vectorStore):
-    model=ChatGroq(groq_api_key=groq_api_key, model_name="mixtral-8x7b-32768")
+    model=ChatGroq(groq_api_key=groq_api_key, model_name="llama-3.1-70b-versatile")
     # model=ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o-mini")
     chain = create_stuff_documents_chain(
         llm=model,
@@ -27,7 +27,9 @@ def create_chain(vectorStore):
     )
 
 
-    # Define metadata field information
+    # Define metadata field information. This is mandatory for the query constructor.
+    # The values for course and subject are hardcoded here. The mySQL functions are in place to get them dynamically 
+    # from the database. Didn't use it because we need to update the knowledge base to include these attribute values.
     metadata_field_info = [
         AttributeInfo(
             name="course",
@@ -43,16 +45,6 @@ def create_chain(vectorStore):
 
     document_content_description = "Brief description of educational content"
 
-
-    # Get the base retriever
-    # base_retriever = vectorStore.as_retriever()
-    # self_query_retriever = SelfQueryRetriever.from_llm(
-    #     llm=model,
-    #     vectorstore=vectorStore,
-    #     document_contents=document_content_description,
-    #     metadata_field_info=metadata_field_info,
-    # )
-
     prompt = get_query_constructor_prompt(
         document_content_description,
         metadata_field_info,
@@ -61,12 +53,14 @@ def create_chain(vectorStore):
     output_parser = StructuredQueryOutputParser.from_components()
     query_constructor = prompt | model | output_parser
 
+    # The self query retriever is able to filter the database based on filters it generates before doing the similarity search.
     self_query_retriever = SelfQueryRetriever(
     query_constructor=query_constructor,
     vectorstore=vectorStore,
     structured_query_translator=PineconeTranslator(),
     )
 
+    # In here also the values for course and subject are hardcoded. The mySQL functions are in place to get them dynamically.
     retriever_prompt = ChatPromptTemplate.from_messages([
         MessagesPlaceholder(variable_name="chat_history"),
         ("human", "{input}"),
@@ -74,7 +68,7 @@ def create_chain(vectorStore):
                 "conversation from the knowledge base. Additionally we are filtering the database for the most relevant vectors before " +
                 "doing the similarity search. Filtering criteria are course[one of 'Programming', '3D Design', 'Miscellaneous' or 'Other'], and subject[one " +
                 "of 'Programming', 'Electronics', '3D Design', 'Manufacturing', 'Miscellaneous' or 'Other']. Your response must contain the search query and the " +
-                "filtering criteria. Do not include anything else."),
+                "filtering criteria. Do not include anything else. Let's think step by step."),
     ])
 
 

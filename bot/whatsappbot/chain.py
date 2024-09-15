@@ -19,7 +19,7 @@ groq_api_key=os.getenv('GROQ_API_KEY')
 openai_api_key = os.getenv('OPENAI_API_KEY')
 
 def create_chain(vectorStore):
-    model=ChatGroq(groq_api_key=groq_api_key, model_name="mixtral-8x7b-32768")
+    model=ChatGroq(groq_api_key=groq_api_key, model_name="llama-3.1-70b-versatile")
     # model=ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o-mini")
     chain = create_stuff_documents_chain(
         llm=model,
@@ -44,15 +44,6 @@ def create_chain(vectorStore):
     document_content_description = "Brief description of educational content"
 
 
-    # Get the base retriever
-    # base_retriever = vectorStore.as_retriever()
-    # self_query_retriever = SelfQueryRetriever.from_llm(
-    #     llm=model,
-    #     vectorstore=vectorStore,
-    #     document_contents=document_content_description,
-    #     metadata_field_info=metadata_field_info,
-    # )
-
     prompt = get_query_constructor_prompt(
         document_content_description,
         metadata_field_info,
@@ -74,11 +65,9 @@ def create_chain(vectorStore):
                 "conversation from the knowledge base. Additionally we are filtering the database for the most relevant vectors before " +
                 "doing the similarity search. Filtering criteria are course[one of 'Programming', '3D Design' or 'Other'], and subject[one " +
                 "of 'Programming', 'Electronics', '3D Design', 'Manufacturing' or 'Other']. Your response must contain the search query and the " +
-                "filtering criteria. Do not include anything else."),
+                "filtering criteria. Do not include anything else. Let's think step by step."),
     ])
 
-
-# , Scope[one of 'Introduction', 'Basics', 'Lab Activity', 'Project' or 'Other'], Difficulty_level[1-5]
 
     history_aware_retriever = create_history_aware_retriever(
         llm=model,

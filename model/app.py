@@ -17,9 +17,10 @@ os.environ["LANGCHAIN_TRACING_V2"]="true"
 os.environ["LANGCHAIN_API_KEY"]=os.getenv("LANGCHAIN_API_KEY")
 warnings.filterwarnings("ignore", category=FutureWarning, module="transformers")
 
-def process_chat(chain, question, chat_history, chat_summary, personalization, notes):
+def process_chat(chain, question, extract, chat_history, chat_summary, personalization, notes):
     response = chain.invoke({
         "input": question,
+        "extract": extract,
         "chat_history": chat_history,
         "chat_summary": chat_summary,
         "student_type" : get_instruction(personalization['student_type']),
@@ -31,12 +32,15 @@ def process_chat(chain, question, chat_history, chat_summary, personalization, n
         "3Ddesign_notes" :  notes["3D Design"]
     })
 
+    # This condition is to handle out of context queries
     if response["context"] == []:
         return "Your query is outside of my knowledge. Apologies for the inconvenience. You should direct this question to a mentor.", []
     else:
         return response["answer"], response["context"]
     
 
+# This function processes the context and returns a list of strings.
+# Used to show Recommended Resources in the chat interface.
 def process_context(context):
     result_lines = []
     for c in context:
@@ -55,7 +59,7 @@ def process_context(context):
     return result_lines
 
 
-def run_model(ChatID, UserID, input_text):
+def run_model(ChatID, UserID, input_text, extract, mediaType, fileName):
     vectorStore = PineconeVectorStore(
         index_name=os.getenv("PINECONE_INDEX"),
         embedding=HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
@@ -93,19 +97,20 @@ def run_model(ChatID, UserID, input_text):
 
     if input_text:
         start=time.time()
-        chat_history = chat_history[-10:]
-        chat_summary = chat_summary
-        response, context = process_chat(chain, input_text, chat_history, chat_summary, personalization, notes)
 
+        # Only the latest 5 query-response pairs are used in processing phase. This maintains a fixed token size.
+        latest_chat_history = chat_history[-10:]
+        response, context = process_chat(chain, input_text, extract, latest_chat_history, chat_summary, personalization, notes)
         formatted_string = process_context(context)
-        print(formatted_string)
-
         response_time = str(time.time()-start)
         print(response_time)
-
         response_str = {"response":response, "response_time":response_time, "context":formatted_string}
 
-        chat_history.append(HumanMessage(content=input_text))
+        # We are storing the mediaType and fileName in the response_metadata field of the HumanMessage object
+        # response_metadata is a dictionary that can store any additional information about the message
+        chat_history.append(HumanMessage(content=input_text, response_metadata={"mediaType" : mediaType, "fileName" : fileName}))
+
+        # We are storing the context in the response_metadata field of the AIMessage object
         chat_history.append(AIMessage(content=response, response_metadata={"context" : formatted_string}))
 
         if personalization["chat_title"] == "":
@@ -114,8 +119,10 @@ def run_model(ChatID, UserID, input_text):
                                     personalization["learning_style"], personalization["communication_format"], 
                                     personalization["tone_style"], personalization["reasoning_framework"])
 
-        chat_history = chat_history[-10:]
-        new_chat_summary = summarize_chat_history(chat_summary, chat_history)
+        # This contains the latest hsitory with the current user query and response added.
+        latest_chat_history = chat_history[-10:]
+        # Chat summary is generated using the latest chat history and existing chat summary.
+        new_chat_summary = summarize_chat_history(chat_summary, latest_chat_history)
         save_chat_history(ChatID, UserID, chat_history, new_chat_summary)
 
         return (response_str)

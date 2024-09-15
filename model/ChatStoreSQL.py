@@ -22,27 +22,51 @@ def get_mysql_connection():
 def serialize_chat_history(chat_history):
     serialized_history = []
     for message in chat_history:
-        if isinstance(message, HumanMessage) or isinstance(message, AIMessage):
+        if isinstance(message, HumanMessage):
             serialized_message = {
-                "type": message.__class__.__name__,
+                "type": "HumanMessage",
                 "content": message.content,
+                # Serialize the specific response_metadata fields for HumanMessage
+                "mediaType": message.response_metadata.get("mediaType"),
+                "fileName": message.response_metadata.get("fileName")
+            }
+        elif isinstance(message, AIMessage):
+            serialized_message = {
+                "type": "AIMessage",
+                "content": message.content,
+                # Serialize the specific response_metadata fields for AIMessage
                 "context": message.response_metadata
             }
-            serialized_history.append(serialized_message)
-        # Add additional handling for other message types if necessary
+        else:
+            raise ValueError(f"Unknown message type: {message.__class__.__name__}")
+        
+        serialized_history.append(serialized_message)
+    
     return json.dumps(serialized_history)
 
 def deserialize_chat_history(serialized_history):
     chat_history = []
     for serialized_message in json.loads(serialized_history):
         if serialized_message["type"] == "HumanMessage":
-            message = HumanMessage(content=serialized_message["content"])
+            # Deserialize HumanMessage with mediaType and fileName metadata
+            message = HumanMessage(
+                content=serialized_message["content"],
+                response_metadata={
+                    "mediaType": serialized_message.get("mediaType"),
+                    "fileName": serialized_message.get("fileName")
+                }
+            )
         elif serialized_message["type"] == "AIMessage":
-            message = AIMessage(content=serialized_message["content"], response_metadata=serialized_message["context"])
+            # Deserialize AIMessage with context metadata
+            message = AIMessage(
+                content=serialized_message["content"],
+                response_metadata=serialized_message["context"]
+            )
         else:
             raise ValueError(f"Unknown message type: {serialized_message['type']}")
         
         chat_history.append(message)
+    
     return chat_history
 
 # Function to save chat history to MySQL
@@ -157,6 +181,7 @@ def calculate_student_type(dob):
     else:
         return None  # For users outside the 10-18 range, no specific type
 
+# This function handles existing and new chat personalization parameters
 def update_personalization_params(chat_id, UserID, chat_title, learning_style, communication_format, tone_style, reasoning_framework):
     conn = get_mysql_connection()
     cursor = conn.cursor(dictionary=True)
@@ -276,7 +301,7 @@ def get_mentor_notes_by_course(studentid):
     
     return notes_by_course
 
-
+# This function returns a list of user chats ordered by timestamp
 def get_past_chats(user_id):
     # Establish a database connection
     connection = get_mysql_connection()
@@ -301,7 +326,7 @@ def get_past_chats(user_id):
     
     return past_chats
 
-
+# This function returns all the chat IDs. It is used to generate new chat IDs.
 def get_chat_ids():
     # Establish a database connection
     connection = get_mysql_connection()
@@ -325,7 +350,7 @@ def get_chat_ids():
     # Return a list of ChatID values
     return [row['ChatID'] for row in chat_ids]
 
-
+# This function is to be used in chain.py to gt values for the course and subject attributes
 def get_courses_and_subjects():
     # Establish a database connection
     connection = get_mysql_connection()

@@ -19,3 +19,16 @@ pydantic
 fastapi-cors
 uvicorn
 lark
+python-multipart
+gtts
+pytesseract
+PyMuPDF
+opencv-python
+google-generativeai
+pypdf
+unstructured
+python-docx
+markdown
+pypandoc
+python-pptx
+openpyxl

@@ -10,22 +10,37 @@ function MainContent({ isSidebarOpen, chatId }) {
   const chatEndRef = useRef(null);
 
   const handleSendMessage = async (message) => {
-    setMessages([...messages, { text: message, type: 'user' }]);
+    setMessages([...messages, { text: message.text, type: 'user', shouldStream: false, mediaType: message.mediaType, fileName: message.fileName }]);
     setIsLoading(true);
 
-    // Request to model
-    const url = "http://localhost:8000/run-model";
-    const postData = { ChatID: chatId, UserID: "user123", input_text: message };
+    // Prepare form data
+    const formData = new FormData();
+    formData.append("ChatID", chatId);
+    formData.append("UserID", "user123");
+    formData.append("input_text", message.text);
+    formData.append("mediaType", message.mediaType);
+    formData.append("fileName", message.fileName);
+
+    // Check if there is a file and append it
+    if (message.file) {
+      formData.append("file", message.file);
+    }
 
     try {
-      const response = await axios.post(url, postData);
+      // Send the message and file to the backend
+      const response = await axios.post("http://localhost:8000/run-model", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+  
       console.log(response);
       const botMessage = response.data['response'];
-      const botContext = response.data['context']; // Assuming this is an array of strings
+      const botContext = response.data['context'];
 
       setMessages((prevMessages) => [
         ...prevMessages,
-        { text: [botMessage, ...botContext], type: 'bot' }, // Pass as an array
+        { text: [botMessage, ...botContext], type: 'bot', shouldStream: true, mediaType: 'text', fileName:'text' },
       ]);
 
     } catch (error) {
@@ -38,14 +53,17 @@ function MainContent({ isSidebarOpen, chatId }) {
   const loadChat = async (selectedChatId) => {
     try {
       const response = await axios.get(`http://localhost:8000/get-chat?chat_id=${selectedChatId}`);
-      const chatHistory = response.data.messages; // Assuming the chat messages are returned
+      const chatHistory = response.data.messages; 
   
       // Iterate through each message in the chat history and add it to the state
       chatHistory.forEach((msg) => {
         if (msg.type === 'human') {
+          const mediaType = msg.response_metadata["mediaType"];
+          const fileName = msg.response_metadata["fileName"];
+          
           setMessages((prevMessages) => [
             ...prevMessages,
-            { text: [msg.content], type: 'user' }, // Wrap the user message in an array
+            { text: [msg.content], type: 'user', shouldStream: false, mediaType: mediaType, fileName:fileName }, // Wrap the user message in an array
           ]);
         } else if (msg.type === 'ai') {
           // If the bot message contains context, ensure it’s added correctly
@@ -54,7 +72,7 @@ function MainContent({ isSidebarOpen, chatId }) {
   
           setMessages((prevMessages) => [
             ...prevMessages,
-            { text: [botMessage, ...botContext], type: 'bot' }, // Combine bot message and context
+            { text: [botMessage, ...botContext], type: 'bot', shouldStream: false, mediaType: 'text', fileName:'text' }, // Combine bot message and context
           ]);
         }
       });
@@ -74,7 +92,10 @@ function MainContent({ isSidebarOpen, chatId }) {
 
   useEffect(() => {
     // Scroll to the bottom when messages change
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const scrollToBottom = () => {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    };
+    setTimeout(scrollToBottom, 100);
   }, [messages]);
 
   return (

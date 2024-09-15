@@ -1,11 +1,18 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from typing import List
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-
+import os
+from groq import Groq
+from fastapi.responses import StreamingResponse, JSONResponse
+from gtts import gTTS
+import io
 
 from app import run_model
 from ChatStoreSQL import update_personalization_params, get_personalization_params, get_past_chats, get_chat_ids, load_chat_history
+from FileProcess import process_file
+
+client = Groq(api_key=os.getenv('GROQ_API_KEY'))
 
 class Request(BaseModel):
     ChatID:str
@@ -21,6 +28,10 @@ class PersonalizationData(BaseModel):
     communication_format: str
     tone_style: str
     reasoning_framework: str
+
+
+class TextRequest(BaseModel):
+    text: str
 
 app = FastAPI()
 
@@ -38,11 +49,32 @@ app.add_middleware(
 )
 
 @app.post("/run-model")
-async def process_input(req:Request):
-    ChatID = req.ChatID
-    UserID = req.UserID
-    input_text = req.input_text
-    response = run_model(ChatID,UserID,input_text)
+async def process_input(ChatID: str = Form(...), UserID: str = Form(...), input_text: str = Form(...), mediaType: str = Form(...), fileName: str = Form(...), file: UploadFile = File(None)):
+    # If a file is uploaded, handle the file
+    if file:
+        file_content = await file.read()
+
+        # Save it to a directory or send it to another service
+        file_location = f"uploads/{file.filename}"
+        with open(file_location, "wb") as f:
+            f.write(file_content)
+        
+        # Process the file content
+        extract = process_file(file_location)
+
+        # Process the text input
+        response = run_model(ChatID, UserID, input_text, extract, mediaType, fileName)
+
+        # After processing, remove the file
+        try:
+            os.remove(file_location)
+        except OSError as e:
+            return JSONResponse(content={"error": f"Error removing file: {e}"}, status_code=500)
+        
+    else:
+        extract = "No file attachments provided"
+        response = run_model(ChatID, UserID, input_text, extract, mediaType, fileName)
+    
     return(response)
 
 
@@ -107,7 +139,42 @@ async def get_chat(chat_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Run the app using Uvicorn
+
+@app.post("/transcribe-audio")
+async def get_transcription(file: UploadFile = File(...)):
+    try:
+        # Send the audio file for transcription
+        transcription = client.audio.transcriptions.create(
+            file=(file.filename, file.file),  # Use the audio file from the request
+            model="distil-whisper-large-v3-en",  # The required transcription model
+            prompt="Specify context or spelling",  # Optional prompt to guide transcription
+            response_format="json",  # Get response in JSON format
+            language="en",  # Specify language
+            temperature=0.0  # Set temperature for deterministic transcription
+        )
+        
+        transcribed_text = transcription.text  # Extract the transcription text
+        print(transcribed_text)
+        return {"transcription": transcribed_text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.post("/text-to-speech")
+async def text_to_speech(request: TextRequest):
+    text = request.text
+
+    if not text:
+        raise HTTPException(status_code=400, detail="No text provided")
+
+    tts = gTTS(text=text, lang='en', slow=False, tld='us')
+    audio_file = io.BytesIO()
+    tts.write_to_fp(audio_file)
+    audio_file.seek(0)
+
+    return StreamingResponse(audio_file, media_type="audio/mp3")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)

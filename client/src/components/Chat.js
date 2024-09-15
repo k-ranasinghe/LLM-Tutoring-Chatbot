@@ -7,7 +7,7 @@ function Chat({messages,isLoading}) {
   return (
     <div className="flex-grow flex flex-col p-4 overflow-y-auto">
       {messages.map((msg, index) => (
-        <ChatMessage key={index} text={msg.text} type={msg.type} />
+        <ChatMessage key={index} text={msg.text} type={msg.type} shouldStream={msg.shouldStream} mediaType={msg.mediaType} fileName={msg.fileName} />
       ))}
       {isLoading && <LoadingAnimation />}
     </div>

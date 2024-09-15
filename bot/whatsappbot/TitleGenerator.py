@@ -9,7 +9,7 @@ load_dotenv()
 groq_api_key=os.getenv('GROQ_API_KEY')
 openai_api_key = os.getenv('OPENAI_API_KEY')
 
-model=ChatGroq(groq_api_key=groq_api_key, model_name="llama3-70b-8192")
+model=ChatGroq(groq_api_key=groq_api_key, model_name="llama-3.1-70b-versatile")
 # model=ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o-mini")
 
 def generate_chat_title(chat_history):

@@ -21,16 +21,17 @@ function Sidebar({ isOpen, toggleSidebar, chatId, setChatId, userId }) {
   const fetchPastChats = async (userId) => {
     try {
       const response = await axios.get(`http://localhost:8000/get-past-chats?userId=${userId}`);
-      setPastChats(response.data); // Assuming response data is an array of past chats
+      setPastChats(response.data);
     } catch (error) {
       console.error('Error fetching past chats:', error);
     }
   };
 
+  // This function fetches all chat IDs. Used when generating a new chat ID.
   const fetchChatIDs = async () => {
     try {
       const response = await axios.get("http://localhost:8000/get-chat-ids");
-      setChatIDs(response.data); // Assuming response data is an array of past chats
+      setChatIDs(response.data);
     } catch (error) {
       console.error('Error fetching chat ids:', error);
     }
@@ -45,6 +46,7 @@ function Sidebar({ isOpen, toggleSidebar, chatId, setChatId, userId }) {
     }
   };
 
+  // This function generates a random string of a given length that is not already in the chatIDs array
   function generateRandomString(length, chatIDs) {
     const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let result = '';
@@ -62,6 +64,9 @@ function Sidebar({ isOpen, toggleSidebar, chatId, setChatId, userId }) {
     return result;
   };
 
+  // This function creates a new chat.
+  // When chat_title is empty, a new title is generated in the backend.
+  // Default personalization values are set.
   const handleNewChat = () => {
     const chatId = generateRandomString(10, chatIDs);
     const chatTitle = "";

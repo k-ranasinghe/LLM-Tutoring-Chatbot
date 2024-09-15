@@ -127,9 +127,13 @@ def get_template():
     """
     # and the suffix our user input and output indicator
     suffix = """
+    If the user has attached any files below under User Attachments, start by briefly explaining the contents of the attachments. Then address the user's question. When answering the user's query, give more weight to the attachments over the additional information provided to you above such as context and conversation summary. 
+
+    User Attachments: {extract}
+    
     User: {input} 
 
-    AI: """
+    AI: Let's think step by step."""
 
     # now create the few shot prompt template
     few_shot_prompt_template = FewShotPromptTemplate(
@@ -137,7 +141,7 @@ def get_template():
         example_prompt=example_prompt,
         prefix=prefix,
         suffix=suffix,
-        input_variables=["context", "input", "chat_summary", "student_type", "learning_style", "communication_format", "tone_style", "reasoning_framework", "programming_notes", "3Ddesign_notes"],
+        input_variables=["context", "input", "extract", "chat_summary", "student_type", "learning_style", "communication_format", "tone_style", "reasoning_framework", "programming_notes", "3Ddesign_notes"],
         example_separator="\n\n"
     )
 

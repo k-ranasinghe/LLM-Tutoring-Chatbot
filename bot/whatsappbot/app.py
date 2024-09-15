@@ -18,9 +18,10 @@ os.environ["LANGCHAIN_API_KEY"]=os.getenv("LANGCHAIN_API_KEY")
 warnings.filterwarnings("ignore", category=FutureWarning, module="transformers")
 
 
-def process_chat(chain, question, chat_history, chat_summary, personalization, notes):
+def process_chat(chain, question, extract, chat_history, chat_summary, personalization, notes):
     response = chain.invoke({
         "input": question,
+        "extract": extract,
         "chat_history": chat_history,
         "chat_summary": chat_summary,
         "student_type" : get_instruction(personalization['student_type']),
@@ -56,7 +57,7 @@ def process_context(context):
     return result_lines
 
 
-def run_model(ChatID, UserID, input_text):
+def run_model(ChatID, UserID, input_text, extract):
     vectorStore = PineconeVectorStore(
         index_name=os.getenv("PINECONE_INDEX"),
         embedding=HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
@@ -94,9 +95,8 @@ def run_model(ChatID, UserID, input_text):
 
     if input_text:
         start=time.process_time()
-        chat_history = chat_history[-10:]
-        chat_summary = chat_summary
-        response, context = process_chat(chain, input_text, chat_history, chat_summary, personalization, notes)
+        latest_chat_history = chat_history[-10:]
+        response, context = process_chat(chain, input_text, extract, latest_chat_history, chat_summary, personalization, notes)
 
         formatted_string = process_context(context)
         print(formatted_string)
@@ -113,8 +113,8 @@ def run_model(ChatID, UserID, input_text):
                                     personalization["learning_style"], personalization["communication_format"], 
                                     personalization["tone_style"], personalization["reasoning_framework"])
 
-        chat_history = chat_history[-10:]
-        new_chat_summary = summarize_chat_history(chat_summary, chat_history)
+        latest_chat_history = chat_history[-10:]
+        new_chat_summary = summarize_chat_history(chat_summary, latest_chat_history)
         save_chat_history(ChatID, UserID, chat_history, new_chat_summary)
 
         return (response_str)

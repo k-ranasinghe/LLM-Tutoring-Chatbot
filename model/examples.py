@@ -1,3 +1,4 @@
+# These are the examples used to train SelfQueryRetreiver in chain.py
 def get_examples():
     examples = [
     {
