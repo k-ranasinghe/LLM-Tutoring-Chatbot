@@ -2,6 +2,7 @@ import os
 import json
 import datetime
 import mysql.connector
+#import pymysql
 from langchain_core.messages import HumanMessage, AIMessage
 
 MYSQL_HOST = os.getenv("MYSQL_HOST")
@@ -11,6 +12,20 @@ MYSQL_DB = os.getenv("MYSQL_DB")
 
 # Function to establish MySQL connection
 def get_mysql_connection():
+    # timeout = 10
+    # connection = pymysql.connect(
+    #     charset="utf8mb4",
+    #     connect_timeout=timeout,
+    #     cursorclass=pymysql.cursors.DictCursor,
+    #     db="defaultdb",
+    #     host="mysql-2f2f286c-chatbot-llm.l.aivencloud.com",
+    #     password="************************",
+    #     read_timeout=timeout,
+    #     port=15276,
+    #     user="avnadmin",
+    #     write_timeout=timeout,
+    # )
+
     connection = mysql.connector.connect(
         host=MYSQL_HOST,
         user=MYSQL_USER,

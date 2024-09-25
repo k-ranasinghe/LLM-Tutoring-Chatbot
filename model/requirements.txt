@@ -32,3 +32,5 @@ markdown
 pypandoc
 python-pptx
 openpyxl
+pymysql
+crytography
