@@ -33,4 +33,4 @@ pypandoc
 python-pptx
 openpyxl
 pymysql
-crytography
+cryptography
