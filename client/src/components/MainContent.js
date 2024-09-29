@@ -8,15 +8,16 @@ function MainContent({ isSidebarOpen, chatId }) {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const chatEndRef = useRef(null);
+  const userId = "user123";
 
   const handleSendMessage = async (message) => {
-    setMessages([...messages, { text: message.text, type: 'user', shouldStream: false, mediaType: message.mediaType, fileName: message.fileName }]);
+    setMessages([...messages, { text: message.text, type: 'user', shouldStream: false, mediaType: message.mediaType, fileName: message.fileName, userQuery: message.text }]);
     setIsLoading(true);
 
     // Prepare form data
     const formData = new FormData();
     formData.append("ChatID", chatId);
-    formData.append("UserID", "user123");
+    formData.append("UserID", userId);
     formData.append("input_text", message.text);
     formData.append("mediaType", message.mediaType);
     formData.append("fileName", message.fileName);
@@ -40,7 +41,7 @@ function MainContent({ isSidebarOpen, chatId }) {
 
       setMessages((prevMessages) => [
         ...prevMessages,
-        { text: [botMessage, ...botContext], type: 'bot', shouldStream: true, mediaType: 'text', fileName:'text' },
+        { text: [botMessage, ...botContext], type: 'bot', shouldStream: true, mediaType: 'text', fileName:'text', userQuery: message.text },
       ]);
 
     } catch (error) {
@@ -116,7 +117,7 @@ function MainContent({ isSidebarOpen, chatId }) {
               }
             `}
           </style>
-          <Chat messages={messages} isLoading={isLoading} />
+          <Chat messages={messages} isLoading={isLoading} userId={userId}/>
           <div ref={chatEndRef} /> {/* Scroll to this ref */}
         </div>
         <PromptInput onSendMessage={handleSendMessage} isLoading={isLoading} />

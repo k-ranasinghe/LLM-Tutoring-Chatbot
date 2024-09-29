@@ -1,4 +1,10 @@
 import os
+import time
+from threading import Timer
+from pydub import AudioSegment
+from math import ceil
+import base64
+import tempfile
 import whisper
 from langchain.schema import Document
 import fitz
@@ -26,34 +32,101 @@ load_dotenv()
 client = Groq(api_key=os.getenv('GROQ_API_KEY'))
 
 ######################### AUDIO ##########################
+# Constants
+MAX_FILE_SIZE_MB = 25
+MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024  # Convert MB to Bytes
 
 def transcribe_audio_files(files_with_names, course, subject):
     documents = []
 
     for file, file_name in files_with_names:
-        # Convert the NumPy array back to a suitable format for Whisper if needed
-        # Here, we assume that the model can process raw audio data directly
+        # Check the size of the audio file
+        file_size = len(file)  # Assuming file is a NumPy array or similar in-memory representation
 
-        transcription = client.audio.transcriptions.create(
-                file=(file_name, file), # Required audio file
-                model="distil-whisper-large-v3-en", # Required model to use for transcription
-                prompt="Specify context or spelling",  # Optional
-                response_format="json",  # Optional
-                language="en",  # Optional
-                temperature=0.0  # Optional
-        )
+        if file_size <= MAX_FILE_SIZE_BYTES:
+            # Process it directly
+            transcription = transcribe_chunk(file, file_name)
+        else:
+            # Handle large audio files by splitting
+            transcription = transcribe_large_audio(file, file_size, file_name)
 
-        transcription = transcription.text
         file_id, file_name = file_name.split('-', 1)
-
+        print(transcription)
         document = Document(
             page_content=transcription,
-            metadata={"course": course, "subject": subject, "format": "audio", "source": file_name, "id": int(file_id)}  # Adjust source if needed
+            metadata={"course": course, "subject": subject, "format": "audio", "source": file_name, "id": int(file_id)}
         )
 
         documents.append(document)
 
     return documents
+
+
+def transcribe_chunk(file, file_name):
+    """Transcribes a single audio chunk using the Whisper API."""
+    transcription = client.audio.transcriptions.create(
+        file=(file_name, file),  # Required audio file
+        model="distil-whisper-large-v3-en",
+        response_format="json",
+        language="en",
+        temperature=0.0
+    )
+    
+    return transcription.text
+
+
+def transcribe_large_audio(file, file_size, file_name):
+    """Handles larger audio files by splitting and transcribing each chunk."""
+    
+    # Check if file is a path or raw audio data
+    if isinstance(file, bytes):
+        # Save raw audio data to a temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as temp_file:
+            temp_file.write(file)
+            temp_file_path = temp_file.name
+    else:
+        # Assume `file` is already a valid file path
+        temp_file_path = file
+
+    audio = AudioSegment.from_file(temp_file_path)  # Load audio from the file
+
+    # Determine the length of the audio file in milliseconds
+    audio_length_ms = len(audio)
+    
+    # Calculate chunk size
+    estimated_chunk_size_ms = (MAX_FILE_SIZE_BYTES / file_size) * audio_length_ms
+    
+    # Split the audio into chunks of size less than 25 MB
+    num_chunks = ceil(audio_length_ms / estimated_chunk_size_ms)
+    
+    combined_transcription = ""
+
+    for i in range(num_chunks):
+        start_ms = i * estimated_chunk_size_ms
+        end_ms = min((i + 1) * estimated_chunk_size_ms, audio_length_ms)
+        
+        # Extract the chunk
+        chunk = audio[start_ms:end_ms]
+        
+        # Export the chunk to a temporary file
+        chunk_path = f"temp_chunk_{i}.mp3"
+        chunk.export(chunk_path, format="mp3")
+        
+        # Transcribe the chunk
+        with open(chunk_path, "rb") as chunk_file:
+            chunk_transcription = transcribe_chunk(chunk_file.read(), chunk_path)
+
+        # Append to the combined transcription
+        combined_transcription += chunk_transcription + " "
+
+        # Clean up the temporary file
+        os.remove(chunk_path)
+
+    # Clean up the temporary file if it was created
+    if isinstance(file, bytes):
+        os.remove(temp_file_path)
+
+    return combined_transcription.strip()
 
 ######################### IMAGES ##########################
 
@@ -101,30 +174,77 @@ def process_all_pdfs(input_dir, output_dir):
 # Step 1: Generate Captions for All Images in Output Directory
 def generate_captions_for_images(output_dir):
     genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    gemini_model = genai.GenerativeModel('gemini-1.5-flash')
 
     captions = []
-    i = 0
+    gemini_counter = 0
+    gemini_tpm_limit = 14  # Gemini model's 15 TPM limit
+    timer_duration = 60  # 1 minute
+    timer_start = time.time()
+    
+    def reset_gemini_counter():
+        nonlocal gemini_counter
+        gemini_counter = 0
+        print("Gemini counter reset. You can now process another 15 images with Gemini.")
+    
+    
     # Iterate through each image file in the output directory
     for image_filename in sorted(os.listdir(output_dir)):
         image_path = os.path.join(output_dir, image_filename)
-        i += 1
 
         # Ensure it's a file (not a subdirectory) and an image
         if os.path.isfile(image_path) and image_filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp')):
             img = PIL.Image.open(image_path)
             initial_caption = pytesseract.image_to_string(img).strip()
             
-            response = model.generate_content(img)
-            model_caption = response.text.strip()  # Clean up the caption text
+            if gemini_counter < gemini_tpm_limit:
+                # If the Gemini model can still process images
+                response = gemini_model.generate_content(img)
+                model_caption = response.text.strip()
+                gemini_counter += 1
 
-            combined_caption = (f"Caption by pytesseract:\n{initial_caption}\n\n"
-                        f"Caption by model:\n{model_caption}")
+                combined_caption = (f"Caption by pytesseract:\n{initial_caption}\n\n"
+                                    f"Caption by model:\n{model_caption}")
+
+                print(f"Gemini processed {gemini_counter} images.")
+            else:
+                # If Gemini reaches the cap, switch to Llama
+                print("Gemini model limit reached. Switching to Llama model.")
+                
+                # Convert image to base64 to pass to Llama
+                with open(image_path, "rb") as image_file:
+                    img_base64 = base64.b64encode(image_file.read()).decode('utf-8')
+
+                chat_completion = client.chat.completions.create(
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": "What is in this image?"},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:image/jpeg;base64,{img_base64}",
+                                    },
+                                },
+                            ],
+                        }
+                    ],
+                    model="llama-3.2-11b-vision-preview",
+                )
+                
+                llama_caption = chat_completion.choices[0].message.content
+                combined_caption = (f"Caption by pytesseract:\n{initial_caption}\n\n"
+                                    f"Caption by model:\n{llama_caption}")
 
             # Store the caption along with image reference
             captions.append((image_filename, combined_caption))
-        if i >= 10:
-            break
+
+            # Check if the timer has reached one minute and reset the Gemini counter
+            if time.time() - timer_start >= timer_duration:
+                reset_gemini_counter()
+                timer_start = time.time()  # Reset the timer start
+                
     return captions
 
 # Step 2: Create a Document with All Captions
@@ -197,16 +317,22 @@ def extract_frames_from_video(video_path, output_dir, desired_fps=None):
 
 
 def transcribe_frames(input_dir):
-    model_name = "gemini-1.5-flash"
     genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
-    model = genai.GenerativeModel(model_name)
+    gemini_model = genai.GenerativeModel('gemini-1.5-flash')
 
     transcriptions = {}
-    i =0
+    gemini_counter = 0
+    gemini_tpm_limit = 14  # Gemini model's 15 TPM limit
+    timer_duration = 60  # 1 minute
+    timer_start = time.time()
+    
+    def reset_gemini_counter():
+        nonlocal gemini_counter
+        gemini_counter = 0
+        print("Gemini counter reset. You can now process another 15 images with Gemini.")
 
     # Iterate over all image files in the directory
     for filename in sorted(os.listdir(input_dir)):
-        i += 1
         if filename.endswith(".png"):
             file_path = os.path.join(input_dir, filename)
 
@@ -214,19 +340,54 @@ def transcribe_frames(input_dir):
             img = PIL.Image.open(file_path)
             initial_caption = pytesseract.image_to_string(img).strip()
 
-            # Generate content
-            response = model.generate_content(img)
-            model_caption = response.text
+            if gemini_counter < gemini_tpm_limit:
+                # If the Gemini model can still process images
+                response = gemini_model.generate_content(img)
+                model_caption = response.text.strip()
+                gemini_counter += 1
 
-            combined_caption = (f"Caption by pytesseract:\n{initial_caption}\n\n"
-                        f"Caption by model:\n{model_caption}")
+                combined_caption = (f"Caption by pytesseract:\n{initial_caption}\n\n"
+                                    f"Caption by model:\n{model_caption}")
+
+                print(f"Gemini processed {gemini_counter} images.")
+            else:
+                # If Gemini reaches the cap, switch to Llama
+                print("Gemini model limit reached. Switching to Llama model.")
+                
+                # Convert image to base64 to pass to Llama
+                with open(file_path, "rb") as image_file:
+                    img_base64 = base64.b64encode(image_file.read()).decode('utf-8')
+
+                chat_completion = client.chat.completions.create(
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": "What is in this image?"},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:image/jpeg;base64,{img_base64}",
+                                    },
+                                },
+                            ],
+                        }
+                    ],
+                    model="llama-3.2-11b-vision-preview",
+                )
+                
+                llama_caption = chat_completion.choices[0].message.content
+                combined_caption = (f"Caption by pytesseract:\n{initial_caption}\n\n"
+                                    f"Caption by model:\n{llama_caption}")
 
             # Store the transcription
             transcriptions[filename] = combined_caption
-
-        if i >= 10:
-            break
-
+            
+            # Check if the timer has reached one minute and reset the Gemini counter
+            if time.time() - timer_start >= timer_duration:
+                reset_gemini_counter()
+                timer_start = time.time()  # Reset the timer start
+    
     return transcriptions
 
 

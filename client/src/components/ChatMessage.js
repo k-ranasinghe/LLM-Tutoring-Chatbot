@@ -5,7 +5,7 @@ import { HandThumbUpIcon as HandThumbUpOutline, HandThumbDownIcon as HandThumbDo
 import { HandThumbUpIcon as HandThumbUpSolid, HandThumbDownIcon as HandThumbDownSolid } from '@heroicons/react/24/solid'; // Solid Icons
 import LoadingAnimation from './LoadingAnimation';
 
-function ChatMessage({ text, type, shouldStream, mediaType, fileName }) {
+function ChatMessage({ text, type, shouldStream, mediaType, fileName, inputUserQuery, userId }) {
   const isUser = type === 'user';
   const messageStyle = isUser ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800';
   const alignment = isUser ? 'self-end' : 'self-start';
@@ -15,7 +15,9 @@ function ChatMessage({ text, type, shouldStream, mediaType, fileName }) {
   const [isAudioPlaying, setIsAudioPlaying] = useState(false); // Track if audio is playing
   const [isAudioLoading, setIsAudioLoading] = useState(false); // Track if audio is being generated
   const [icon, setIcon] = useState(<SpeakerWaveIcon className="w-6 h-6 text-gray-700" />); // Initial icon state
-  const [feedback, setFeedback] = useState(null); // State for feedback. Backend is not implemented yet
+  const [feedback, setFeedback] = useState(null); // State for feedback
+  const [showFeedbackPopup, setShowFeedbackPopup] = useState(false); // New state for showing feedback popup
+  const [feedbackText, setFeedbackText] = useState(''); // New state to capture feedback text
   const audioRef = useRef(null); // Reference to audio object
 
   // Split the message into main content and resources
@@ -25,6 +27,27 @@ function ChatMessage({ text, type, shouldStream, mediaType, fileName }) {
   // Helper function to generate a random delay within a range (min, max)
   // This will be used to simulate the streaming/generative effect of ChatGPT
   const getRandomDelay = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+  const localStorageKey = mainContent;
+  const [userQuery, setUserQuery] = useState(() => {
+    const savedQuery = localStorage.getItem(localStorageKey);
+    return savedQuery ? savedQuery : '';
+  });
+
+  useEffect(() => {
+    if (inputUserQuery) {
+      setUserQuery(inputUserQuery);
+      localStorage.setItem(localStorageKey, inputUserQuery);
+    }
+  }, [inputUserQuery, localStorageKey]);
+
+  // Load feedback state from local storage on component mount
+  useEffect(() => {
+    const savedFeedback = localStorage.getItem(`${localStorageKey}-feedback`);
+    if (savedFeedback) {
+      setFeedback(savedFeedback);
+    }
+  }, [localStorageKey]);
 
   useEffect(() => {
     if (shouldStream && typeof mainContent === 'string') {
@@ -132,9 +155,50 @@ function ChatMessage({ text, type, shouldStream, mediaType, fileName }) {
     return null;
   };
 
-  // TODO: Implement feedback handling in backend
+  // Function to send feedback to the backend
+  const sendFeedbackToBackend = async (feedbackType) => {
+    try {
+      const response = await fetch('http://localhost:8000/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: mainContent,
+          feedback: feedbackType,
+          feedbackText: feedbackText,
+          userText: userQuery,
+          userId: userId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send feedback');
+      }
+
+      console.log('Feedback sent successfully');
+    } catch (error) {
+      console.error('Error sending feedback:', error);
+    }
+  };
+
   const handleFeedback = (type) => {
-    setFeedback(type);
+    if (feedback === type) {
+      // If the same feedback is clicked again, reset to null
+      setFeedback(null);
+      localStorage.removeItem(`${localStorageKey}-feedback`); // Remove feedback from localStorage
+      setShowFeedbackPopup(false);
+    } else {
+      setFeedback(type);
+      localStorage.setItem(`${localStorageKey}-feedback`, type); // Store feedback in localStorage
+      setShowFeedbackPopup(true); // Show the feedback popup when thumbs-up or down is clicked
+    }
+  };
+
+  const handleFeedbackSubmit = () => {
+    sendFeedbackToBackend(feedback); // Send feedback to backend
+    setShowFeedbackPopup(false); // Close the popup after submission
+    setFeedbackText(''); // Reset feedback text
   };
 
   return (
@@ -185,6 +249,23 @@ function ChatMessage({ text, type, shouldStream, mediaType, fileName }) {
               {feedback === 'down' ? <HandThumbDownSolid className="w-6 h-6 text-white" /> : <HandThumbDownOutline className="w-6 h-6 text-gray-700" />}
             </button>
           </div>
+          {showFeedbackPopup && (
+            <div className="mt-2 p-2 bg-gray-100 rounded-lg shadow-lg">
+              <textarea
+                className="w-full p-2 border rounded-md"
+                rows="3"
+                value={feedbackText}
+                onChange={(e) => setFeedbackText(e.target.value)}
+                placeholder="(Optional) Tell us more about your feedback..."
+              ></textarea>
+              <button
+                onClick={handleFeedbackSubmit}
+                className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+              >
+                Submit Feedback
+              </button>
+            </div>
+          )}
         </div>
       )}
     </motion.div>

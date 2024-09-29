@@ -387,3 +387,35 @@ def get_courses_and_subjects():
     connection.close()
     
     return distinct_courses_and_subjects
+
+def store_feedback(userId, feedback):
+    connection = get_mysql_connection()
+    cursor = connection.cursor()
+    
+    # Insert or update the feedback for the given userid
+    query = """
+    INSERT INTO feedback (userid, feedback)
+    VALUES (%s, %s)
+    ON DUPLICATE KEY UPDATE feedback = %s
+    """
+    cursor.execute(query, (userId, feedback, feedback))
+    
+    connection.commit()
+    cursor.close()
+    connection.close()
+
+def get_existing_feedback(userId):
+    connection = get_mysql_connection()
+    cursor = connection.cursor()
+    
+    # Query to get the feedback for the given userid
+    query = "SELECT feedback FROM feedback WHERE userid = %s"
+    cursor.execute(query, (userId,))
+    result = cursor.fetchone()
+    
+    cursor.close()
+    connection.close()
+    
+    if result:
+        return result[0]  # Return the existing feedback
+    return "No existing feedback"  # No feedback found for this userid

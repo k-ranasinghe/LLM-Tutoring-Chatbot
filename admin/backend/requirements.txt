@@ -28,3 +28,4 @@ langchain_huggingface
 pytesseract
 markdown
 pypandoc
+pydub

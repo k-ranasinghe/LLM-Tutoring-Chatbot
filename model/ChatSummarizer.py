@@ -29,13 +29,13 @@ def summarize_chat_history(existing_summary, chat_history):
 
         Keep the summary brief while retaining critical information. 
         Prioritize the most recent interactions and overarching themes.
-
-        After generating the summary, append the following most recent query-response pair:
-        {last_chat_pair}
         """)
     ])
     chain = LLMChain(llm=model, prompt=prompt)
 
-    summary = chain.invoke({"text": combined_text, "last_chat_pair": last_chat_pair})["text"]
+    summary = chain.invoke({"text": combined_text})["text"]
+    
+    # Append the last chat pair to the summary
+    summary += f"\n\n**Last Chat Pair**:\n{last_chat_pair}"
 
     return summary

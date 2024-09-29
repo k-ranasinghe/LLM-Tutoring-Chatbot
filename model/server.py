@@ -9,8 +9,9 @@ from gtts import gTTS
 import io
 
 from app import run_model
-from ChatStoreSQL import update_personalization_params, get_personalization_params, get_past_chats, get_chat_ids, load_chat_history
+from ChatStoreSQL import update_personalization_params, get_personalization_params, get_past_chats, get_chat_ids, load_chat_history, store_feedback, get_existing_feedback
 from FileProcess import process_file
+from ProcessFeedback import review_feedback
 
 client = Groq(api_key=os.getenv('GROQ_API_KEY'))
 
@@ -32,6 +33,14 @@ class PersonalizationData(BaseModel):
 
 class TextRequest(BaseModel):
     text: str
+    
+
+class Feedback(BaseModel):
+    text: str
+    feedback: str
+    feedbackText: str
+    userText: str
+    userId: str
 
 app = FastAPI()
 
@@ -174,6 +183,29 @@ async def text_to_speech(request: TextRequest):
 
     return StreamingResponse(audio_file, media_type="audio/mp3")
 
+
+@app.post("/feedback")
+async def feedback(request: Feedback):
+    text = request.text
+    feedback = request.feedback
+    feedbackText = request.feedbackText
+    userText = request.userText
+    userId = request.userId
+    
+    # Determine the type of feedback
+    feedback_type = "positive" if feedback == "up" else "negative"
+    feedbackText = feedbackText if feedbackText else "No feedback provided"
+    
+    # Get existing feedback from the database
+    existing_feedback = get_existing_feedback(userId)
+    
+    review = review_feedback(userText, text, feedback_type, feedbackText, existing_feedback)
+    print(review)
+    
+    # Store the updated review in the feedback table
+    store_feedback(userId, review)
+
+    return review
 
 if __name__ == "__main__":
     import uvicorn

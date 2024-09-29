@@ -8,7 +8,7 @@ import time
 import warnings
 
 from chain import create_chain
-from ChatStoreSQL import save_chat_history, load_chat_history, get_instruction, get_personalization_params, update_personalization_params, get_mentor_notes_by_course, get_courses_and_subjects
+from ChatStoreSQL import save_chat_history, load_chat_history, get_instruction, get_personalization_params, update_personalization_params, get_mentor_notes_by_course, get_courses_and_subjects, get_existing_feedback
 from ChatSummarizer import summarize_chat_history
 from TitleGenerator import generate_chat_title
 
@@ -17,7 +17,7 @@ os.environ["LANGCHAIN_TRACING_V2"]="true"
 os.environ["LANGCHAIN_API_KEY"]=os.getenv("LANGCHAIN_API_KEY")
 warnings.filterwarnings("ignore", category=FutureWarning, module="transformers")
 
-def process_chat(chain, question, extract, chat_history, chat_summary, personalization, notes):
+def process_chat(chain, question, extract, chat_history, chat_summary, personalization, notes, feedback):
     response = chain.invoke({
         "input": question,
         "extract": extract,
@@ -29,7 +29,8 @@ def process_chat(chain, question, extract, chat_history, chat_summary, personali
         "tone_style" : get_instruction(personalization['tone_style']),
         "reasoning_framework" : get_instruction(personalization['reasoning_framework']),
         "programming_notes" : notes["Programming"],
-        "3Ddesign_notes" :  notes["3D Design"]
+        "3Ddesign_notes" :  notes["3D Design"],
+        "feedback" : feedback
     })
 
     # This condition is to handle out of context queries
@@ -88,6 +89,7 @@ def run_model(ChatID, UserID, input_text, extract, mediaType, fileName):
     chain = create_chain(vectorStore)
     personalization = get_personalization_params(ChatID)
     notes = get_mentor_notes_by_course(UserID)
+    feedback = get_existing_feedback(UserID)
     
     chat_history, chat_summary = load_chat_history(ChatID)
     if chat_history is None:
@@ -100,7 +102,7 @@ def run_model(ChatID, UserID, input_text, extract, mediaType, fileName):
 
         # Only the latest 5 query-response pairs are used in processing phase. This maintains a fixed token size.
         latest_chat_history = chat_history[-10:]
-        response, context = process_chat(chain, input_text, extract, latest_chat_history, chat_summary, personalization, notes)
+        response, context = process_chat(chain, input_text, extract, latest_chat_history, chat_summary, personalization, notes, feedback)
         formatted_string = process_context(context)
         response_time = str(time.time()-start)
         print(response_time)

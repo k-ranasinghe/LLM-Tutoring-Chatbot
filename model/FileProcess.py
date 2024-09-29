@@ -1,11 +1,16 @@
 import os
 import shutil
 import mimetypes
+import time
+from threading import Timer
+from pydub import AudioSegment
+from math import ceil
 from PIL import Image
 import PIL.Image
 import pytesseract
 import fitz
 import cv2
+import base64
 from groq import Groq
 import google.generativeai as genai
 from dotenv import load_dotenv
@@ -70,7 +75,25 @@ def process_file(file_path):
         return {"error": f"Unsupported file format: {mime_type}"}
 
 ######################### AUDIO PROCESSING ##########################
+# Constants
+MAX_FILE_SIZE_MB = 25
+MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024  # Convert MB to Bytes
+
 def transcribe_audio(file_path):
+    # Get the size of the file in bytes
+    file_size = os.path.getsize(file_path)
+
+    # If the file is within the 25 MB limit, process it directly
+    if file_size <= MAX_FILE_SIZE_BYTES:
+        return transcribe_chunk(file_path)
+
+    # If the file exceeds the size limit, we need to split it
+    else:
+        return transcribe_large_audio(file_path, file_size)
+
+
+def transcribe_chunk(file_path):
+    """Transcribes a single audio chunk using the Whisper API."""
     with open(file_path, "rb") as audio_file:
         file_content = audio_file.read()
     transcription = client.audio.transcriptions.create(
@@ -80,7 +103,47 @@ def transcribe_audio(file_path):
         language="en",
         temperature=0.0
     )
+    
     return transcription.text
+
+
+def transcribe_large_audio(file_path, file_size):
+    """Handles larger audio files by splitting and transcribing each chunk."""
+    audio = AudioSegment.from_file(file_path)
+
+    # Determine the length of the audio file in milliseconds
+    audio_length_ms = len(audio)
+    
+    # Calculate how many chunks we need based on the size limit
+    # Estimate: average bitrate of MP3 files is about 1 MB per minute (depends on format)
+    estimated_chunk_size_ms = (MAX_FILE_SIZE_BYTES / file_size) * audio_length_ms
+    
+    # Split the audio into chunks of size less than 25 MB
+    num_chunks = ceil(audio_length_ms / estimated_chunk_size_ms)
+    
+    combined_transcription = ""
+
+    for i in range(num_chunks):
+        start_ms = i * estimated_chunk_size_ms
+        end_ms = min((i + 1) * estimated_chunk_size_ms, audio_length_ms)
+        
+        # Extract the chunk
+        chunk = audio[start_ms:end_ms]
+        
+        # Export the chunk to a temporary file
+        chunk_path = f"temp_chunk_{i}.mp3"
+        chunk.export(chunk_path, format="mp3")
+        
+        # Transcribe the chunk
+        chunk_transcription = transcribe_chunk(chunk_path)
+        
+        # Append to the combined transcription
+        combined_transcription += chunk_transcription + " "
+
+        # Clean up the temporary file
+        os.remove(chunk_path)
+
+    return combined_transcription.strip()
 
 ######################### IMAGE PROCESSING ##########################
 def extract_info_from_image(image_path):
@@ -89,10 +152,34 @@ def extract_info_from_image(image_path):
     # Extract text from the image using pytesseract
     initial_caption = pytesseract.image_to_string(img).strip()
     
+    # with open(image_path, "rb") as image_file:
+    #     img1 = base64.b64encode(image_file.read()).decode('utf-8')
+    
+    # chat_completion = client.chat.completions.create(
+    #     messages=[
+    #         {
+    #             "role": "user",
+    #             "content": [
+    #                 {"type": "text", "text": "What is in this image?"},
+    #                 {
+    #                     "type": "image_url",
+    #                     "image_url": {
+    #                         "url": f"data:image/jpeg;base64,{img1}",
+    #                     },
+    #                 },
+    #             ],
+    #         }
+    #     ],
+    #     model="llama-3.2-11b-vision-preview",
+    # )
+    
+    # another_caption = chat_completion.choices[0].message.content
+    
     genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
     model = genai.GenerativeModel('gemini-1.5-flash')
     response = model.generate_content(img)
     model_caption = response.text.strip()
+    
     combined_caption = (f"Caption by pytesseract:\n{initial_caption}\n\n"
                         f"Caption by model:\n{model_caption}")
     
@@ -130,30 +217,77 @@ def extract_images_from_pdf(pdf_path, output_dir):
 
 def generate_captions_for_images(output_dir):
     genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    gemini_model = genai.GenerativeModel('gemini-1.5-flash')
 
     captions = []
-    i = 0
+    gemini_counter = 0
+    gemini_tpm_limit = 14  # Gemini model's 15 TPM limit
+    timer_duration = 60  # 1 minute
+    timer_start = time.time()
+    
+    def reset_gemini_counter():
+        nonlocal gemini_counter
+        gemini_counter = 0
+        print("Gemini counter reset. You can now process another 15 images with Gemini.")
+    
+    
     # Iterate through each image file in the output directory
     for image_filename in sorted(os.listdir(output_dir)):
         image_path = os.path.join(output_dir, image_filename)
-        i += 1
 
         # Ensure it's a file (not a subdirectory) and an image
         if os.path.isfile(image_path) and image_filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp')):
             img = PIL.Image.open(image_path)
             initial_caption = pytesseract.image_to_string(img).strip()
             
-            response = model.generate_content(img)
-            model_caption = response.text.strip()  # Clean up the caption text
+            if gemini_counter < gemini_tpm_limit:
+                # If the Gemini model can still process images
+                response = gemini_model.generate_content(img)
+                model_caption = response.text.strip()
+                gemini_counter += 1
 
-            combined_caption = (f"Caption by pytesseract:\n{initial_caption}\n\n"
-                        f"Caption by model:\n{model_caption}")
+                combined_caption = (f"Caption by pytesseract:\n{initial_caption}\n\n"
+                                    f"Caption by model:\n{model_caption}")
+
+                print(f"Gemini processed {gemini_counter} images.")
+            else:
+                # If Gemini reaches the cap, switch to Llama
+                print("Gemini model limit reached. Switching to Llama model.")
+                
+                # Convert image to base64 to pass to Llama
+                with open(image_path, "rb") as image_file:
+                    img_base64 = base64.b64encode(image_file.read()).decode('utf-8')
+
+                chat_completion = client.chat.completions.create(
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": "What is in this image?"},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:image/jpeg;base64,{img_base64}",
+                                    },
+                                },
+                            ],
+                        }
+                    ],
+                    model="llama-3.2-11b-vision-preview",
+                )
+                
+                llama_caption = chat_completion.choices[0].message.content
+                combined_caption = (f"Caption by pytesseract:\n{initial_caption}\n\n"
+                                    f"Caption by model:\n{llama_caption}")
 
             # Store the caption along with image reference
             captions.append((image_filename, combined_caption))
-        if i >= 10:
-            break
+
+            # Check if the timer has reached one minute and reset the Gemini counter
+            if time.time() - timer_start >= timer_duration:
+                reset_gemini_counter()
+                timer_start = time.time()  # Reset the timer start
+                
     return captions
 
 
@@ -215,16 +349,22 @@ def extract_frames_from_video(video_path, output_dir, desired_fps=None):
 
 
 def transcribe_frames(input_dir):
-    model_name = "gemini-1.5-flash"
     genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
-    model = genai.GenerativeModel(model_name)
+    gemini_model = genai.GenerativeModel('gemini-1.5-flash')
 
     transcriptions = {}
-    i =0
+    gemini_counter = 0
+    gemini_tpm_limit = 14  # Gemini model's 15 TPM limit
+    timer_duration = 60  # 1 minute
+    timer_start = time.time()
+    
+    def reset_gemini_counter():
+        nonlocal gemini_counter
+        gemini_counter = 0
+        print("Gemini counter reset. You can now process another 15 images with Gemini.")
 
     # Iterate over all image files in the directory
     for filename in sorted(os.listdir(input_dir)):
-        i += 1
         if filename.endswith(".png"):
             file_path = os.path.join(input_dir, filename)
 
@@ -232,19 +372,54 @@ def transcribe_frames(input_dir):
             img = PIL.Image.open(file_path)
             initial_caption = pytesseract.image_to_string(img).strip()
 
-            # Generate content
-            response = model.generate_content(img)
-            model_caption = response.text
+            if gemini_counter < gemini_tpm_limit:
+                # If the Gemini model can still process images
+                response = gemini_model.generate_content(img)
+                model_caption = response.text.strip()
+                gemini_counter += 1
 
-            combined_caption = (f"Caption by pytesseract:\n{initial_caption}\n\n"
-                        f"Caption by model:\n{model_caption}")
+                combined_caption = (f"Caption by pytesseract:\n{initial_caption}\n\n"
+                                    f"Caption by model:\n{model_caption}")
+
+                print(f"Gemini processed {gemini_counter} images.")
+            else:
+                # If Gemini reaches the cap, switch to Llama
+                print("Gemini model limit reached. Switching to Llama model.")
+                
+                # Convert image to base64 to pass to Llama
+                with open(file_path, "rb") as image_file:
+                    img_base64 = base64.b64encode(image_file.read()).decode('utf-8')
+
+                chat_completion = client.chat.completions.create(
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": "What is in this image?"},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:image/jpeg;base64,{img_base64}",
+                                    },
+                                },
+                            ],
+                        }
+                    ],
+                    model="llama-3.2-11b-vision-preview",
+                )
+                
+                llama_caption = chat_completion.choices[0].message.content
+                combined_caption = (f"Caption by pytesseract:\n{initial_caption}\n\n"
+                                    f"Caption by model:\n{llama_caption}")
 
             # Store the transcription
             transcriptions[filename] = combined_caption
-
-        if i >= 10:
-            break
-
+            
+            # Check if the timer has reached one minute and reset the Gemini counter
+            if time.time() - timer_start >= timer_duration:
+                reset_gemini_counter()
+                timer_start = time.time()  # Reset the timer start
+    
     return transcriptions
 
 
@@ -252,6 +427,7 @@ def process_video(video_path):
     output_dir = "extracted_frames"
     extract_frames_from_video(video_path, output_dir, desired_fps=1)
     transcriptions = transcribe_frames(output_dir)
+    print(transcriptions)
 
     # Clean up the output directory. This directory was created to store the extracted frames/images
     if os.path.exists(output_dir):

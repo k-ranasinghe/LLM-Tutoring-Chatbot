@@ -60,7 +60,7 @@ def upload_material(request):
             file.name = str(file_id) + "-" + file.name
             print(file.name)
 
-            if file_name.endswith((".m4a", ".mp3", ".webm", ".mp4", ".wav", ".mpeg", ".ogg", ".opus", ".flac")):
+            if file_name.endswith((".m4a", ".mp3", ".webm", ".wav", ".mpeg", ".ogg", ".opus", ".flac")):
                 audio_files.append((file, file.name))
             if file_name.endswith(".pdf"):
                 pdf_files.append(file)
@@ -88,7 +88,6 @@ def upload_material(request):
     
     ############## Images ###############
     
-
     pdf_dir = os.path.join(settings.MEDIA_ROOT, 'pdfs')
     extracted_images_dir = os.path.join(settings.MEDIA_ROOT, 'extracted_images')
 
@@ -124,7 +123,24 @@ def upload_material(request):
 
     frame_rate = 1
     proccessed_videos = process_videos_in_directory(video_dir, frame_dir, frame_rate, course, subject)
-    # print(proccessed_videos)
+    
+    # Step 3: Check for .mp4 files and process them as audio
+    converted_audio_files = []
+
+    # Open and check if any video file is .mp4
+    for file in os.listdir(video_dir):
+        file_path = os.path.join(video_dir, file)
+
+        if file.endswith(".mp4"):
+            # Open the .mp4 file as binary
+            with open(file_path, 'rb') as f:
+                file_content = f.read()
+
+                # If you need to directly process it, add to converted_audio_files
+                converted_audio_files.append((file_content, file))
+
+    # Step 4: Transcribe audio from .mp4 files
+    transcribed_video_files = transcribe_audio_files(converted_audio_files, course, subject)
 
 
     ############## Text ###############
@@ -156,6 +172,8 @@ def upload_material(request):
 
     if video_files:
         for doc in proccessed_videos:
+            documents.append(doc)
+        for doc in transcribed_video_files:
             documents.append(doc)
 
     print(len(documents))
