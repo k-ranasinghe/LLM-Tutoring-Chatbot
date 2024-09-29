@@ -125,6 +125,11 @@ INSERT INTO Personalization_instructions (Parameter, Personalization_type, Instr
 ('Analogical', 'reasoning_framework', "Prefered reasoning framework is analogical. Draw parallels between the concept and a familiar system or process. Use phrases like 'This is similar to...'. Encourage finding similarities and differences between the analogy and the actual concept. Guide through applying insights from the analogy to the original problem.");
 
 
+CREATE TABLE feedback (
+    userid VARCHAR(255) PRIMARY KEY,
+    feedback TEXT
+);
+
 select * from User_data;
 select * from User_chats;
 select * from Chat_data;
@@ -132,3 +137,4 @@ select * from Chat_info;
 select * from Mentor_notes;
 select * from Curriculum;
 select * from Personalization_instructions;
+select * from feedback;
