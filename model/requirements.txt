@@ -35,3 +35,4 @@ openpyxl
 pymysql
 cryptography
 pydub
+aiofiles

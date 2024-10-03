@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, BackgroundTasks, HTTPException, UploadFile, File, Form
 from typing import List
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,13 +7,17 @@ from groq import Groq
 from fastapi.responses import StreamingResponse, JSONResponse
 from gtts import gTTS
 import io
+import aiofiles
 
 from app import run_model
-from ChatStoreSQL import update_personalization_params, get_personalization_params, get_past_chats, get_chat_ids, load_chat_history, store_feedback, get_existing_feedback
+from ChatStoreSQL import update_personalization_params, get_personalization_params, get_past_chats, get_chat_ids, load_chat_history, store_feedback, get_existing_feedback, delete_chat, get_mentor_notes_by_course
 from FileProcess import process_file
 from ProcessFeedback import review_feedback
 
 client = Groq(api_key=os.getenv('GROQ_API_KEY'))
+
+# Cache for preloading variables
+preloaded_data = {}
 
 class Request(BaseModel):
     ChatID:str
@@ -42,6 +46,9 @@ class Feedback(BaseModel):
     userText: str
     userId: str
 
+class DeleteChatRequest(BaseModel):
+    chat_id: str
+
 app = FastAPI()
 
 # Allowing Cross Origin Resource Sharing
@@ -57,38 +64,93 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all HTTP headers
 )
 
+async def handle_file(file):
+    # Async file read and write
+    file_content = await file.read()
+    file_location = f"uploads/{file.filename}"
+    async with aiofiles.open(file_location, "wb") as f:
+        await f.write(file_content)
+    return file_location
+
+async def remove_file(file):
+    try:
+        os.remove(file)
+    except OSError as e:
+        return JSONResponse(content={"error": f"Error removing file: {e}"}, status_code=500)
+
+
+# Helper function to preload chat-specific data
+async def preload_chat_data(ChatID):
+    global preloaded_data
+    if ChatID not in preloaded_data:
+        preloaded_data[ChatID] = {}
+        
+    # Preload chat history and summary
+    chat_history, chat_summary = load_chat_history(ChatID)
+    preloaded_data[ChatID]["chat_history"] = chat_history if chat_history else []
+    preloaded_data[ChatID]["chat_summary"] = chat_summary if chat_summary else ""
+
+    # Preload personalization data
+    preloaded_data[ChatID]["personalization"] = get_personalization_params(ChatID)
+
+    print(f"Preloaded data for ChatID {ChatID}")
+
+async def preload_user_data(UserID):
+    global preloaded_data
+    if UserID not in preloaded_data:
+        preloaded_data[UserID] = {}
+        
+    # Preload mentor notes and feedback using UserID
+    preloaded_data[UserID]["notes"] = get_mentor_notes_by_course(UserID)
+    preloaded_data[UserID]["feedback"] = get_existing_feedback(UserID)
+
+    print(f"Preloaded data for UserID {UserID}")
+
+async def update_preload_data(ChatID):
+    global preloaded_data
+    if ChatID not in preloaded_data:
+        preloaded_data[ChatID] = {}
+        
+    # Preload chat history and summary
+    chat_history, chat_summary = load_chat_history(ChatID)
+    preloaded_data[ChatID]["chat_history"] = chat_history if chat_history else []
+    preloaded_data[ChatID]["chat_summary"] = chat_summary if chat_summary else ""
+
+    print(f"Updated chat history and chat summary for ChatID {ChatID}")
+
+
 @app.post("/run-model")
-async def process_input(ChatID: str = Form(...), UserID: str = Form(...), input_text: str = Form(...), mediaType: str = Form(...), fileName: str = Form(...), file: UploadFile = File(None)):
+async def process_input(ChatID: str = Form(...), UserID: str = Form(...), input_text: str = Form(...), mediaType: str = Form(...), fileName: str = Form(...), file: UploadFile = File(None), background_tasks: BackgroundTasks = BackgroundTasks()):
+    if ChatID not in preloaded_data:
+            await preload_chat_data(ChatID)
+    if UserID not in preloaded_data:
+            await preload_user_data(UserID)
+    
     # If a file is uploaded, handle the file
     if file:
-        file_content = await file.read()
-
-        # Save it to a directory or send it to another service
-        file_location = f"uploads/{file.filename}"
-        with open(file_location, "wb") as f:
-            f.write(file_content)
-        
+        # Handle the uploaded file
+        file_location = await handle_file(file)
         # Process the file content
         extract = process_file(file_location)
 
         # Process the text input
-        response = run_model(ChatID, UserID, input_text, extract, mediaType, fileName)
+        response = run_model(ChatID, UserID, input_text, extract, mediaType, fileName, preloaded_data, background_tasks)
 
         # After processing, remove the file
-        try:
-            os.remove(file_location)
-        except OSError as e:
-            return JSONResponse(content={"error": f"Error removing file: {e}"}, status_code=500)
-        
+        remove_response = await remove_file(file_location)
+        if remove_response:
+            return remove_response
     else:
         extract = "No file attachments provided"
-        response = run_model(ChatID, UserID, input_text, extract, mediaType, fileName)
-    
-    return(response)
+        response = run_model(ChatID, UserID, input_text, extract, mediaType, fileName, preloaded_data, background_tasks)
+        
+    background_tasks.add_task(update_preload_data, ChatID)
+
+    return response
 
 
 @app.post("/update-personalization")
-async def update_personalization(data: PersonalizationData):
+async def update_personalization(data: PersonalizationData, background_tasks: BackgroundTasks = BackgroundTasks()):
     try:
         update_personalization_params(
             data.ChatID, 
@@ -99,6 +161,7 @@ async def update_personalization(data: PersonalizationData):
             data.tone_style, 
             data.reasoning_framework
         )
+        
         return {"message": "Personalization data updated successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -108,6 +171,7 @@ async def update_personalization(data: PersonalizationData):
 async def get_personalization(chat_id: str):
     try:
         data = get_personalization_params(chat_id)
+        
         if not data:
             raise HTTPException(status_code=404, detail="Personalization data not found")
         return data
@@ -116,9 +180,11 @@ async def get_personalization(chat_id: str):
     
     
 @app.get("/get-past-chats")
-async def get_past_chats_endpoint(userId: str):
+async def get_past_chats_endpoint(userId: str, background_tasks: BackgroundTasks = BackgroundTasks()):
     try:
         past_chats = get_past_chats(userId)
+        
+        background_tasks.add_task(preload_user_data, userId)
         return past_chats
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -134,7 +200,7 @@ async def fetch_chat_ids():
 
 
 @app.get("/get-chat")
-async def get_chat(chat_id: str):
+async def get_chat(chat_id: str, background_tasks: BackgroundTasks = BackgroundTasks()):
     try:
         chat_history, chat_summary = load_chat_history(chat_id)
         
@@ -144,6 +210,7 @@ async def get_chat(chat_id: str):
             "summary": chat_summary
         }
         
+        background_tasks.add_task(preload_chat_data, chat_id)
         return response_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -185,7 +252,7 @@ async def text_to_speech(request: TextRequest):
 
 
 @app.post("/feedback")
-async def feedback(request: Feedback):
+async def feedback(request: Feedback, background_tasks: BackgroundTasks = BackgroundTasks()):
     text = request.text
     feedback = request.feedback
     feedbackText = request.feedbackText
@@ -204,8 +271,27 @@ async def feedback(request: Feedback):
     
     # Store the updated review in the feedback table
     store_feedback(userId, review)
+    
+    background_tasks.add_task(preload_user_data, userId)
 
     return review
+
+
+@app.post("/delete-chat")
+async def delete_chat_endpoint(request: DeleteChatRequest):
+    chat_id = request.chat_id
+    print(chat_id)
+    
+    try:
+        # Call the delete_chat function from ChatStoreSQL to delete the chat from the database
+        response = delete_chat(chat_id)
+        return response
+
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,6 +1,6 @@
 // src/components/Sidebar.js
 import React, { useState, useEffect } from 'react';
-import { XMarkIcon, Bars3Icon, PlusCircleIcon, AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, Bars3Icon, PlusCircleIcon, AdjustmentsHorizontalIcon, TrashIcon } from '@heroicons/react/24/outline';
 import axios from 'axios'
 
 function Sidebar({ isOpen, toggleSidebar, chatId, setChatId, userId }) {
@@ -11,6 +11,8 @@ function Sidebar({ isOpen, toggleSidebar, chatId, setChatId, userId }) {
   const [reasoningFramework, setReasoningFramework] = useState('');
   const [pastChats, setPastChats] = useState([]);
   const [chatIDs, setChatIDs] = useState([]);
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [chatToDelete, setChatToDelete] = useState(null); // Store the chat ID to delete
 
   useEffect(() => {
     getPersonalization(chatId);
@@ -132,26 +134,58 @@ function Sidebar({ isOpen, toggleSidebar, chatId, setChatId, userId }) {
     window.location.reload();
   };
 
+  const handleDeleteChat = (chatId) => {
+    setChatToDelete(chatId); // Set the chat to delete
+    setShowDeletePopup(true); // Show the delete confirmation popup
+  };
+
+  const confirmDeleteChat = async () => {
+      try { 
+        const response = await fetch(`http://localhost:8000/delete-chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ chat_id: chatToDelete }), // Send the chat ID in the body
+        });
+        
+        if (response.ok) {
+          setPastChats(pastChats.filter(chat => chat.ChatID !== chatToDelete)); // Remove the chat from the list
+          setShowDeletePopup(false); // Hide the delete popup
+          setChatToDelete(null); // Clear the chat to delete
+        } else {
+          console.error('Failed to delete chat:', await response.text());
+        }
+      } catch (error) {
+        console.error('Error deleting chat:', error);
+      }
+  };
 
   return (
     <div className={`text-white flex-shrink-0 ${isOpen ? 'w-64' : 'w-20'} transition-all duration-300 h-full font-sans overflow-y-auto`} style={{backgroundColor:"#042f47"}}>
       <div className="p-4 flex justify-between items-center">
         <h2 className={`text-xl font-bold ${isOpen ? 'block' : 'hidden'}`}>Past Chats</h2>
         <button onClick={toggleSidebar}>
-          {isOpen ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
+          {isOpen ? <XMarkIcon className="h-6 w-6 transform hover:scale-125 transition-transform duration-200" /> : <Bars3Icon className="h-6 w-6 transform hover:scale-125 transition-transform duration-200" />}
         </button>
       </div>
       
       <div className="overflow-y-auto">
-        <button onClick={handleNewChat} className="p-2 w-full text-left hover:bg-gray-700 cursor-pointer text-lg font-semibold flex items-center space-x-2"><PlusCircleIcon className="h-6 w-6 mr-2" />New Chat</button>
+        <button onClick={handleNewChat} className="p-2 w-full text-left hover:bg-gray-700 cursor-pointer text-lg font-semibold flex items-center space-x-2"><PlusCircleIcon className="h-6 w-6 mr-2 transform hover:scale-125 transition-transform duration-200" />New Chat</button>
         <ul>
           {pastChats.map((chat) => (
-            <li key={chat.ChatID} className="p-2 hover:bg-gray-700 cursor-pointer" onClick={() => setChat(chat.ChatID)}>
-              {chat.Chat_title || `Untitled Chat`}
+            <li key={chat.ChatID} className="p-2 hover:bg-gray-700 cursor-pointer flex justify-between items-center">
+              <span onClick={() => setChat(chat.ChatID)}>
+                {chat.Chat_title || `Untitled Chat`}
+              </span>
+              <button onClick={() => handleDeleteChat(chat.ChatID)} className="ml-2">
+                <TrashIcon className="h-5 w-5 text-white hover:text-red-500 transform hover:scale-125 transition-transform duration-200" />
+              </button>
             </li>
           ))}
         </ul>
       </div>
+
       <div className="p-4">
         <h3 className="text-lg font-bold mb-2 flex items-center space-x-2"><AdjustmentsHorizontalIcon className="h-6 w-6 mr-2" />Personalization</h3>
         <div className="mb-2">
@@ -208,6 +242,32 @@ function Sidebar({ isOpen, toggleSidebar, chatId, setChatId, userId }) {
           onClick={handleSave}>
           Save
         </button>
+
+        {showDeletePopup && (
+          <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75">
+            <div className="bg-white p-8 rounded-lg shadow-lg text-center relative">
+              <div className="absolute inset-x-0 top-[-35px] flex justify-center">
+                <div className="h-16 w-16 bg-red-500 rounded-full flex items-center justify-center">
+                  <TrashIcon className="h-12 w-12 text-white" />
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold mb-2 text-gray-800 mt-6">Delete Chat</h2>
+              <p className="text-gray-600 mb-6 text-lg">Are you sure you want to delete the chat?</p>
+              <div className="flex justify-center space-x-4">
+                <button 
+                  className="bg-red-500 text-white px-6 py-3 rounded-md font-semibold hover:bg-red-700" 
+                  onClick={confirmDeleteChat}>
+                  Yes, Delete
+                </button>
+                <button 
+                  className="bg-gray-300 text-black px-6 py-3 rounded-md font-semibold hover:bg-gray-400" 
+                  onClick={() => setShowDeletePopup(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

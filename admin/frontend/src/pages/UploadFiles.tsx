@@ -277,8 +277,8 @@ const UploadFiles: React.FC = () => {
                   <MenuItem value="Electronics">Electronics - II</MenuItem>
                   <MenuItem value="Embedded Systems">Embedded Systems - I</MenuItem>
                   <MenuItem value="Embedded Systems">Embedded Systems - II</MenuItem>
-                  <MenuItem value="Programming and Algorithms">Programming and Algorithms - I</MenuItem>
-                  <MenuItem value="Programming and Algorithms">Programming and Algorithms - II</MenuItem>
+                  <MenuItem value="Programming">Programming and Algorithms - I</MenuItem>
+                  <MenuItem value="Programming">Programming and Algorithms - II</MenuItem>
                 </Select>
               </FormControl>
             </Grid>

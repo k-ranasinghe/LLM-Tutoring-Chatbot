@@ -153,13 +153,13 @@ function PromptInput({ onSendMessage, isLoading }) {
           disabled={isLoading}
         >
           {isRecording ? (
-            <StopIcon className="h-6 w-6 text-red-600" /> // Stop icon during recording
+            <StopIcon className="h-6 w-6 text-red-600 transform hover:scale-125 transition-transform duration-200" /> // Stop icon during recording
           ) : (
-            <MicrophoneIcon className="h-6 w-6" /> // Mic icon when not recording
+            <MicrophoneIcon className="h-6 w-6 hover:text-sky-500 transform hover:scale-125 transition-transform duration-200" /> // Mic icon when not recording
           )}
         </button>
         <label className="mr-2 text-gray-600 hover:text-gray-900 cursor-pointer">
-          <PaperClipIcon className="h-6 w-6" />
+          <PaperClipIcon className="h-6 w-6 hover:text-sky-500 transform hover:scale-125 transition-transform duration-200" />
           <input
             type="file"
             onChange={(e) => handleFileChange(e.target.files[0])}

@@ -1,26 +1,20 @@
 import os
 import time
-from threading import Timer
 from pydub import AudioSegment
 from math import ceil
 import base64
 import tempfile
-import whisper
 from langchain.schema import Document
 import fitz
 import google.generativeai as genai
 import PIL.Image
-import pandas as pd
 from groq import Groq
 import cv2
 from PIL import Image
 import pytesseract
 from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain_huggingface import HuggingFaceEmbeddings
-from pinecone import Pinecone, ServerlessSpec
-from langchain_pinecone import PineconeVectorStore
-
-
+from langchain_chroma import Chroma
 from dotenv import load_dotenv
 import os
 import warnings
@@ -534,19 +528,14 @@ def update_metadata(documents, course, subject):
 def save_doc(documents):
     embeddings=HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
 
-    index_name = os.getenv("PINECONE_INDEX")
-
-    pinecone = PineconeVectorStore.from_documents(
-        documents, embeddings, index_name=index_name
+    # Create a Chroma instance
+    chroma = Chroma(
+        embedding_function=embeddings,
+        persist_directory="../../knowledge_base"  # Specify your directory for persistence
     )
-
-    # Initialize Pinecone with your API key
-    pc = Pinecone(
-        api_key=os.getenv("PINECONE_API_KEY")
-    )
-
-    # Connect to the index
-    index = pc.describe_index(name=index_name)
+    
+    # Add documents to the Chroma vector store
+    chroma.add_documents(documents)
 
 
 def process_mentor_files(input_dir):

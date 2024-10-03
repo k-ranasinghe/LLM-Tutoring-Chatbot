@@ -14,6 +14,7 @@ bot/whatsappbot/__pycache__
 assets/
 admin/backend/lectures/
 admin/backend/static/
+knowledge_base/
 /.pnp
 .pnp.js
 

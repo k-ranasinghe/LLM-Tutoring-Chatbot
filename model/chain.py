@@ -19,7 +19,7 @@ groq_api_key=os.getenv('GROQ_API_KEY')
 openai_api_key = os.getenv('OPENAI_API_KEY')
 
 def create_chain(vectorStore):
-    model=ChatGroq(groq_api_key=groq_api_key, model_name="llama-3.1-70b-versatile")
+    model=ChatGroq(groq_api_key=groq_api_key, model_name="llama-3.2-90b-text-preview")
     # model=ChatOpenAI(openai_api_key=openai_api_key, model_name="gpt-4o-mini")
     chain = create_stuff_documents_chain(
         llm=model,
@@ -58,6 +58,7 @@ def create_chain(vectorStore):
     query_constructor=query_constructor,
     vectorstore=vectorStore,
     structured_query_translator=PineconeTranslator(),
+    search_kwargs={"k": 2}
     )
 
     # In here also the values for course and subject are hardcoded. The mySQL functions are in place to get them dynamically.

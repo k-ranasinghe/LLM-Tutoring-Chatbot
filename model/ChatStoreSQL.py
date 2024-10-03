@@ -419,3 +419,38 @@ def get_existing_feedback(userId):
     if result:
         return result[0]  # Return the existing feedback
     return "No existing feedback"  # No feedback found for this userid
+
+
+# Function to delete a chat from the MySQL database
+def delete_chat(chat_id):
+    connection = get_mysql_connection()
+    cursor = connection.cursor()
+
+    try:
+        # Begin a transaction
+        connection.start_transaction()
+
+        # Delete from `user_chats` table
+        cursor.execute("DELETE FROM user_chats WHERE ChatID = %s", (chat_id,))
+        
+        # Delete from `chat_data` table
+        cursor.execute("DELETE FROM chat_data WHERE ChatID = %s", (chat_id,))
+        
+        # Delete from `chat_info` table
+        cursor.execute("DELETE FROM chat_info WHERE ChatID = %s", (chat_id,))
+
+        # Commit the transaction
+        connection.commit()
+
+    except mysql.connector.Error as err:
+        # Roll back the transaction in case of an error
+        connection.rollback()
+        print(f"Error: {err}")
+        raise
+
+    finally:
+        # Close the cursor and connection
+        cursor.close()
+        connection.close()
+
+    print(f"Chat with ChatID {chat_id} has been successfully deleted.")

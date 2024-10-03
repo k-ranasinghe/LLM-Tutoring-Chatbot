@@ -1,22 +1,14 @@
-from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from .models import LectureMaterial
 from .serializer import LectureMaterialSerializer
 import mysql.connector
-import librosa
-import io
-import torch
-from whisper import load_model, log_mel_spectrogram
 from django.conf import settings
 from dotenv import load_dotenv
 import os
-import pandas as pd
 import shutil
-import pinecone
-from pinecone import Pinecone, ServerlessSpec
-from langchain_pinecone import PineconeVectorStore
+from langchain_chroma import Chroma
 
 from .multimodal_rag import transcribe_audio_files, process_all_pdfs, generate_captions_for_images, create_documents_from_captions, process_videos_in_directory, text_preprocess, update_metadata, save_doc, process_mentor_files
 load_dotenv()
@@ -227,24 +219,6 @@ def search_materials(request):
     serializedData = LectureMaterialSerializer(materials, many=True).data
     return Response(serializedData)
 
-# @api_view(["DELETE"])
-# def delete_material(request, pk):
-#     try:
-#         material = LectureMaterial.objects.get(pk=pk)
-#     except LectureMaterial.DoesNotExist:
-#         return Response(status=status.HTTP_404_NOT_FOUND)
-    
-#     # material.file.delete(save=False)
-#     material.delete()
-#     return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-pc = Pinecone(
-        api_key=os.getenv("PINECONE_API_KEY")
-    )
-
-# Set your Pinecone index name
-INDEX_NAME = os.getenv("PINECONE_INDEX")
 
 @api_view(["DELETE"])
 def delete_material(request, pk):
@@ -257,32 +231,38 @@ def delete_material(request, pk):
     # Delete the material from the database
     material.delete()
 
-    # Initialize Pinecone index
-    index = pc.Index(INDEX_NAME)
+    # Initialize ChromaDB index
+    chroma = Chroma(persist_directory="../../knowledge_base") 
 
     # Step 1: Retrieve relevant IDs from Pinecone
     ids_to_delete = []
     print("document id: ", pk)
-
-    try:
-        query_response = index.query(
-            vector=[0] * 768, # [0,0,0,0......0]
-            filter={"id": pk},  # Adjust filter criteria if necessary
-            top_k=10000,  # Adjust based on your requirements
-            include_metadata=False  # Only need IDs, not metadata
-        )
-        ids_to_delete = [match.id for match in query_response.matches]
-        print("no. of vectors: ",len(ids_to_delete))
-        
-    except Exception as e:
-        return Response({"error": f"Error querying Pinecone: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    # Step 2: Delete vectors from Pinecone
+    
+    documents = chroma.get(where={"id": pk})
+    ids_to_delete = documents['ids']
+    print("no. of vectors: ",len(ids_to_delete))
     if ids_to_delete:
-        try:
-            index.delete(ids=ids_to_delete)
-        except Exception as e:
-            return Response({"error": f"Error deleting vectors from Pinecone: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        chroma.delete(ids=ids_to_delete)
+
+    # try:
+    #     query_response = chroma.query(
+    #         # vector=[0] * 768, # [0,0,0,0......0]
+    #         filter={"id": pk},  # Adjust filter criteria if necessary
+    #         top_k=10000,  # Adjust based on your requirements
+    #         include_metadata=False  # Only need IDs, not metadata
+    #     )
+    #     ids_to_delete = [doc['id'] for doc in query_response['documents']] 
+    #     print("no. of vectors: ",len(ids_to_delete))
+        
+    # except Exception as e:
+    #     return Response({"error": f"Error querying ChromaDB: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # # Step 2: Delete vectors from Pinecone
+    # if ids_to_delete:
+    #     try:
+    #         chroma.delete(ids=ids_to_delete)
+    #     except Exception as e:
+    #         return Response({"error": f"Error deleting vectors from ChromaDB: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     return Response(status=status.HTTP_204_NO_CONTENT)
 
