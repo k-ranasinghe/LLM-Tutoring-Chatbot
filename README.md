@@ -17,26 +17,11 @@ MYSQL_HOST=
 MYSQL_USER=
 MYSQL_PASSWORD=
 MYSQL_DB=
-```
-
-bot/whatsappbot/ 
-```sh
-OPENAI_API_KEY=
-GEMINI_API_KEY=
-LANGCHAIN_API_KEY=
-GROQ_API_KEY=
-PINECONE_API_KEY=
-PINECONE_INDEX=
-LANGCHAIN_PROJECT=
-
-MYSQL_HOST=
-MYSQL_USER=
-MYSQL_PASSWORD=
-MYSQL_DB=
 
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
 ```
+
 
 admin/backend/api 
 ```sh
@@ -88,21 +73,9 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-Backend Whatsapp (port=8002)
-```sh
-cd bot
-python -m venv venv
-venv/Scripts/activate
-cd whatsappbot
-pip install -r requirements.txt
-cd ..
-python manage.py migrate
-python manage.py runserver
-```
-
 Host Backend for whatsapp
 ```sh
-ngrok http 8002
+ngrok http 8000
 ```
 
 Then add the ngrok url to twilio sandbox with "POST" method
