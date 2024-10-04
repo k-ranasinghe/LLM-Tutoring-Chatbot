@@ -1,6 +1,5 @@
 from langchain_openai import OpenAIEmbeddings
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_pinecone import PineconeVectorStore
 from langchain_chroma import Chroma
 from langchain_core.messages import HumanMessage, AIMessage
 from dotenv import load_dotenv
@@ -10,7 +9,7 @@ import warnings
 from fastapi import BackgroundTasks
 
 from chain import create_chain
-from ChatStoreSQL import save_chat_history, load_chat_history, get_instruction, get_personalization_params, update_personalization_params, get_mentor_notes_by_course, get_courses_and_subjects, get_existing_feedback
+from ChatStoreSQL import save_chat_history, get_instruction, update_personalization_params, get_courses_and_subjects
 from ChatSummarizer import summarize_chat_history
 from TitleGenerator import generate_chat_title
 
@@ -20,15 +19,8 @@ os.environ["LANGCHAIN_API_KEY"]=os.getenv("LANGCHAIN_API_KEY")
 warnings.filterwarnings("ignore", category=FutureWarning, module="transformers")
 
 # Pre-load the vector store and chain
-vector_store = PineconeVectorStore(
-    index_name=os.getenv("PINECONE_INDEX"),
-    embedding=HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
-)
-
-# chain = create_chain(vector_store)
-
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
-chroma = Chroma(persist_directory="../admin/backend/db", embedding_function=embeddings)
+chroma = Chroma(persist_directory="../knowledge_base", embedding_function=embeddings)
 chain = create_chain(chroma)
 
 def process_chat(chain, question, extract, chat_history, chat_summary, personalization, notes, feedback):
@@ -49,7 +41,7 @@ def process_chat(chain, question, extract, chat_history, chat_summary, personali
 
     # This condition is to handle out of context queries
     if response["context"] == []:
-        return "Your query is outside of my knowledge. Apologies for the inconvenience. You should direct this question to a mentor.", []
+        return "Your query is outside of my knowledge. Apologies for the inconvenience. This question will be directed to a mentor.", []
     else:
         return response["answer"], response["context"]
     

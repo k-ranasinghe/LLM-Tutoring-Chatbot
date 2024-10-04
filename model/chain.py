@@ -1,14 +1,12 @@
 from langchain_openai import ChatOpenAI
 from langchain_groq import ChatGroq
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_retrieval_chain
-from langchain_core.prompts import MessagesPlaceholder
 from langchain.chains.history_aware_retriever import create_history_aware_retriever
-from langchain.chains.query_constructor.base import (StructuredQueryOutputParser, get_query_constructor_prompt)
-from langchain_community.query_constructors.pinecone import PineconeTranslator
+from langchain.chains.query_constructor.base import (StructuredQueryOutputParser, AttributeInfo, get_query_constructor_prompt)
+from langchain_community.query_constructors.chroma import ChromaTranslator
 from langchain.retrievers.self_query.base import SelfQueryRetriever
-from langchain.chains.query_constructor.base import AttributeInfo
 from dotenv import load_dotenv
 import os
 from PromptEng import get_template
@@ -57,8 +55,8 @@ def create_chain(vectorStore):
     self_query_retriever = SelfQueryRetriever(
     query_constructor=query_constructor,
     vectorstore=vectorStore,
-    structured_query_translator=PineconeTranslator(),
-    search_kwargs={"k": 2}
+    structured_query_translator=ChromaTranslator(),
+    search_kwargs={"k": 5}
     )
 
     # In here also the values for course and subject are hardcoded. The mySQL functions are in place to get them dynamically.

@@ -2,10 +2,8 @@ import os
 import shutil
 import mimetypes
 import time
-from threading import Timer
 from pydub import AudioSegment
 from math import ceil
-from PIL import Image
 import PIL.Image
 import pytesseract
 import fitz
@@ -335,7 +333,7 @@ def extract_frames_from_video(video_path, output_dir, desired_fps=None):
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
             # Convert to PIL Image
-            img = Image.fromarray(frame_rgb)
+            img = PIL.Image.fromarray(frame_rgb)
 
             # Save the frame as an image file with the desired format
             frame_filename = f"{video_filename}_time_{timestamp:.2f}_frame_{extracted_count:04d}.png"

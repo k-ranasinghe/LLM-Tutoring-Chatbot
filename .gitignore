@@ -3,14 +3,10 @@
 # dependencies
 client/node_modules
 model/venv
-bot/venv
 client/.env
 model/.env
 server/.env
-bot/whatsappbot/.env
-bot/bot/__pycache__
 model/__pycache__
-bot/whatsappbot/__pycache__
 assets/
 admin/backend/lectures/
 admin/backend/static/

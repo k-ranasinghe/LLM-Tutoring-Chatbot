@@ -1,4 +1,4 @@
-from fastapi import FastAPI, BackgroundTasks, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, Request, BackgroundTasks, HTTPException, UploadFile, File, Form
 from typing import List
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,19 +10,18 @@ import io
 import aiofiles
 
 from app import run_model
-from ChatStoreSQL import update_personalization_params, get_personalization_params, get_past_chats, get_chat_ids, load_chat_history, store_feedback, get_existing_feedback, delete_chat, get_mentor_notes_by_course
 from FileProcess import process_file
 from ProcessFeedback import review_feedback
+from whatsapp import whatsapp
+from ChatStoreSQL import (update_personalization_params, get_personalization_params, 
+                        get_past_chats, get_chat_ids, load_chat_history, store_feedback, 
+                        get_existing_feedback, delete_chat, get_mentor_notes_by_course)
+
 
 client = Groq(api_key=os.getenv('GROQ_API_KEY'))
 
 # Cache for preloading variables
 preloaded_data = {}
-
-class Request(BaseModel):
-    ChatID:str
-    UserID:str
-    input_text:str
 
 
 class PersonalizationData(BaseModel):
@@ -292,6 +291,13 @@ async def delete_chat_endpoint(request: DeleteChatRequest):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# WhatsApp Bot Endpoint
+@app.post("/")
+async def bot(request: Request, background_tasks: BackgroundTasks = BackgroundTasks()):
+    await whatsapp(request, background_tasks)
+
 
 if __name__ == "__main__":
     import uvicorn
