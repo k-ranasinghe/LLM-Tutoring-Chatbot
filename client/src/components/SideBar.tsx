@@ -108,10 +108,10 @@ export default function SideBar() {
 
   // Navigation items for the admin panel
   const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
+    { text: 'Dashboard', icon: <DashboardIcon />, path: '/upload' },
     { text: 'Manage Uploads', icon: <ManageHistoryIcon />, path: '/manage' },
     { text: 'Mentor Notes', icon: <SchoolIcon />, path: '/notes' },
-    { text: 'Teachers', icon: <PeopleIcon />, path: '/teachers' },
+    { text: 'Mentor Queries', icon: <PeopleIcon />, path: '/queries' },
     { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
   ];
 

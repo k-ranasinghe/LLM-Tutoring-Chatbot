@@ -9,19 +9,22 @@ import warnings
 from fastapi import BackgroundTasks
 
 from chain import create_chain
-from ChatStoreSQL import save_chat_history, get_instruction, update_personalization_params, get_courses_and_subjects
+from ChatStoreSQL import save_chat_history, get_instruction, update_personalization_params, get_courses_and_subjects, store_mentor_query
 from ChatSummarizer import summarize_chat_history
 from TitleGenerator import generate_chat_title
+from WebScraper import fetch_recommended_resources
 
 load_dotenv()
 os.environ["LANGCHAIN_TRACING_V2"]="true"
 os.environ["LANGCHAIN_API_KEY"]=os.getenv("LANGCHAIN_API_KEY")
 warnings.filterwarnings("ignore", category=FutureWarning, module="transformers")
 
+
 # Pre-load the vector store and chain
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
 chroma = Chroma(persist_directory="../knowledge_base", embedding_function=embeddings)
 chain = create_chain(chroma)
+
 
 def process_chat(chain, question, extract, chat_history, chat_summary, personalization, notes, feedback):
     response = chain.invoke({
@@ -34,16 +37,15 @@ def process_chat(chain, question, extract, chat_history, chat_summary, personali
         "communication_format" : get_instruction(personalization['communication_format']),
         "tone_style" : get_instruction(personalization['tone_style']),
         "reasoning_framework" : get_instruction(personalization['reasoning_framework']),
-        "programming_notes" : notes["Programming"],
-        "3Ddesign_notes" :  notes["3D Design"],
+        "mentor_notes" : notes,
         "feedback" : feedback
     })
 
     # This condition is to handle out of context queries
     if response["context"] == []:
-        return "Your query is outside of my knowledge. Apologies for the inconvenience. This question will be directed to a mentor.", []
+        return "Your query is outside of my knowledge. Apologies for the inconvenience. This question will be directed to a mentor.", [], response["answer"]
     else:
-        return response["answer"], response["context"]
+        return response["answer"], response["context"], ""
     
 
 # This function processes the context and returns a list of strings.
@@ -66,10 +68,16 @@ def process_context(context):
     return result_lines
 
 
-def update_chat_history_and_summary(ChatID, UserID, input_text, mediaType, fileName, chat_history, response, formatted_string, personalization, chat_summary):
+def update_chat_history_and_summary(ChatID, UserID, input_text, mediaType, fileName, chat_history, response, context, internal_response, personalization, chat_summary):
+    if context == []:
+        resources = []
+        store_mentor_query(UserID, input_text, internal_response)
+    else:
+        resources = fetch_recommended_resources(input_text, response, chat_history[-10:])
+    
     # Store input and response in chat history
     chat_history.append(HumanMessage(content=input_text, response_metadata={"mediaType": mediaType, "fileName": fileName}))
-    chat_history.append(AIMessage(content=response, response_metadata={"context": formatted_string}))
+    chat_history.append(AIMessage(content=response, response_metadata={"context": resources}))
 
     if personalization["chat_title"] == "":
         personalization["chat_title"] = generate_chat_title(chat_history)
@@ -119,14 +127,14 @@ def run_model(ChatID, UserID, input_text, extract, mediaType, fileName, preloade
 
         # Only the latest 5 query-response pairs are used in processing phase. This maintains a fixed token size.
         latest_chat_history = chat_history[-10:]
-        response, context = process_chat(chain, input_text, extract, latest_chat_history, chat_summary, personalization, notes, feedback)
+        response, context, internal_response = process_chat(chain, input_text, extract, latest_chat_history, chat_summary, personalization, notes, feedback)
         formatted_string = process_context(context)
         response_time = str(time.time()-start)
         print(response_time)
         response_str = {"response":response, "response_time":response_time, "context":formatted_string}
 
         # Offload the chat history and summary updates to a background task
-        background_tasks.add_task(update_chat_history_and_summary, ChatID, UserID, input_text, mediaType, fileName, chat_history, response, formatted_string, personalization, chat_summary)
+        background_tasks.add_task(update_chat_history_and_summary, ChatID, UserID, input_text, mediaType, fileName, chat_history, response, context, internal_response, personalization, chat_summary)
 
 
         return (response_str)

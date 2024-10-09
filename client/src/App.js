@@ -1,5 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-
+import ManageFiles from "./pages/ManageFiles.tsx";
+import UploadFiles from "./pages/UploadFiles.tsx";
+import MentorNotes from "./pages/MentorNotes.tsx";
+import MentorQueries from "./pages/MentorQueries.tsx";
 import ChatPage from "./pages/ChatPage";
 import SignupPage from "./pages/SignupPage";
 
@@ -9,10 +12,12 @@ function App() {
         <div className="container">
           <Routes>
             <Route exact path="/" element={<ChatPage />} />
-            {/*<Route path="/about" element={<About />} />*/}
             <Route path="/sign-up" element={<SignupPage />} />
-            {/* <Route path="/register" element={<RegisterPage />} /> */}
-            {/*<Route path='/dashboard' element={<Dashboard />} />*/}
+            
+            <Route path="/upload" element={<UploadFiles />} /> 
+            <Route path="/manage" element={<ManageFiles />} /> 
+            <Route path="/notes" element={<MentorNotes />} /> 
+            <Route path="/queries" element={<MentorQueries />} /> 
           </Routes>
         </div>
       </Router>

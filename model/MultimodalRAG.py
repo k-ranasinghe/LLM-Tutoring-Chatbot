@@ -531,33 +531,8 @@ def save_doc(documents):
     # Create a Chroma instance
     chroma = Chroma(
         embedding_function=embeddings,
-        persist_directory="../../knowledge_base"  # Specify your directory for persistence
+        persist_directory="../knowledge_base"  # Specify your directory for persistence
     )
     
     # Add documents to the Chroma vector store
     chroma.add_documents(documents)
-
-
-def process_mentor_files(input_dir):
-    model_name = "gemini-1.5-flash"
-    genai.configure(api_key=os.getenv('GOOGLE_API_KEY'))
-    model = genai.GenerativeModel(model_name)
-
-    preproccessed_text = text_preprocess(input_dir)
-    transcriptions = {}
-
-    for filename in sorted(os.listdir(input_dir)):
-        if filename.endswith((".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".webp")):
-            file_path = os.path.join(input_dir, filename)
-
-            # Open the image
-            img = PIL.Image.open(file_path)
-
-            # Generate content
-            response = model.generate_content(img)
-            model_caption = response.text
-
-            # Store the transcription
-            transcriptions[filename] = model_caption
-
-    return transcriptions, preproccessed_text

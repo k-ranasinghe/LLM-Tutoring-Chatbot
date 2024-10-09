@@ -35,13 +35,12 @@ function MainContent({ isSidebarOpen, chatId }) {
         },
       });
   
-      console.log(response);
       const botMessage = response.data['response'];
       const botContext = response.data['context'];
 
       setMessages((prevMessages) => [
         ...prevMessages,
-        { text: [botMessage, ...botContext], type: 'bot', shouldStream: true, mediaType: 'text', fileName:'text', userQuery: message.text },
+        { text: [botMessage, botContext], type: 'bot', shouldStream: true, mediaType: 'text', fileName:'text', userQuery: message.text },
       ]);
 
     } catch (error) {
@@ -73,7 +72,7 @@ function MainContent({ isSidebarOpen, chatId }) {
   
           setMessages((prevMessages) => [
             ...prevMessages,
-            { text: [botMessage, ...botContext], type: 'bot', shouldStream: false, mediaType: 'text', fileName:'text' }, // Combine bot message and context
+            { text: [botMessage, botContext], type: 'bot', shouldStream: false, mediaType: 'text', fileName:'text' }, // Combine bot message and context
           ]);
         }
       });
@@ -117,7 +116,7 @@ function MainContent({ isSidebarOpen, chatId }) {
               }
             `}
           </style>
-          <Chat messages={messages} isLoading={isLoading} userId={userId}/>
+          <Chat messages={messages} isLoading={isLoading} userId={userId} chatId={chatId} />
           <div ref={chatEndRef} /> {/* Scroll to this ref */}
         </div>
         <PromptInput onSendMessage={handleSendMessage} isLoading={isLoading} />

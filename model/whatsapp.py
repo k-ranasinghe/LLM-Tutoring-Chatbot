@@ -12,7 +12,7 @@ from requests.auth import HTTPBasicAuth
 from app import run_model
 from FileProcess import process_file
 from ChatStoreSQL import (update_personalization_params, get_personalization_params, get_past_chats, delete_chat,
-                        get_chat_ids, load_chat_history, get_existing_feedback, get_mentor_notes_by_course)
+                        get_chat_ids, load_chat_history, get_existing_feedback, get_mentor_notes)
 
 account_sid = os.getenv('TWILIO_ACCOUNT_SID')
 auth_token = os.getenv('TWILIO_AUTH_TOKEN')
@@ -52,7 +52,7 @@ async def preload_user_data(UserID):
         preloaded_data[UserID] = {}
         
     # Preload mentor notes and feedback using UserID
-    preloaded_data[UserID]["notes"] = get_mentor_notes_by_course(UserID)
+    preloaded_data[UserID]["notes"] = get_mentor_notes(UserID)
     preloaded_data[UserID]["feedback"] = get_existing_feedback(UserID)
 
     print(f"Preloaded data for UserID {UserID}")
@@ -75,6 +75,31 @@ async def remove_file(file):
     except OSError as e:
         return JSONResponse(content={"error": f"Error removing file: {e}"}, status_code=500)
 
+async def fetch_resources(preloaded_data, ChatID, sender_number):
+    chat_history = preloaded_data[ChatID]["chat_history"]
+    msg = chat_history[-1]
+    context = msg.response_metadata["context"]
+
+    if context and any(context.values()):
+        # Formatting the context for WhatsApp message
+        message_body = "Recommended Resources 📚:\n\n"
+        emoji = ["🔎", "🎥"]
+        i=0
+        for category, links in context.items():
+            message_body += f"*{category} {emoji[i]}:*\n"
+            for link in links:
+                message_body += f"• {link}\n"
+            message_body += "\n"
+            i =+1
+
+        # Sending the message
+        twilio.messages.create(
+            body=message_body.strip(),
+            from_='whatsapp:+14155238886',
+            to=sender_number,
+        )
+    else:
+        print("No resources available to send.")
 
 async def whatsapp(request: Request, background_tasks: BackgroundTasks):
     # Read the raw body
@@ -148,7 +173,7 @@ async def whatsapp(request: Request, background_tasks: BackgroundTasks):
                 if response["context"] == []:
                     formatted_string = f"{response["response"]} 😇"
                 else:
-                    formatted_string = f"*🎤 Voice Message Transcribed:*\n{message}\n\n*Response:*\n{response["response"]}\n\n\n*Recommended Resources 📚:*\n\n{context_lines}"
+                    formatted_string = f"*🎤 Voice Message Transcribed:*\n{message}\n\n*Response:*\n{response["response"]}"
 
                 twilio.messages.create(
                         body=formatted_string,
@@ -160,6 +185,7 @@ async def whatsapp(request: Request, background_tasks: BackgroundTasks):
                 if remove_response:
                     return remove_response
                 background_tasks.add_task(update_preload_data, chat_id)
+                background_tasks.add_task(fetch_resources, chat_id, sender_number)
             else:
                 print(f"Failed to download audio file: {audio_response.status_code}")
                 response_message = f"Failed to download audio file from {media_url}. Status code: {audio_response.status_code}"
@@ -459,7 +485,7 @@ async def whatsapp(request: Request, background_tasks: BackgroundTasks):
             if response["context"] == []:
                 formatted_string = f"{response["response"]} 😇"
             else:
-                formatted_string = f"{response["response"]}\n\n\n*Recommended Resources 📚:*\n\n{context_lines}"
+                formatted_string = f"{response["response"]}"
 
             twilio.messages.create(
                     body=formatted_string,
@@ -469,6 +495,7 @@ async def whatsapp(request: Request, background_tasks: BackgroundTasks):
             )
             
             background_tasks.add_task(update_preload_data, chat_id)
+            background_tasks.add_task(fetch_resources, preloaded_data, chat_id, sender_number)
 
             return JSONResponse("chatbot response sent")
         
@@ -490,7 +517,7 @@ async def whatsapp(request: Request, background_tasks: BackgroundTasks):
                             
                 print(f"{media_type_category} file downloaded successfully")
 
-                extract = process_file(file_path)
+                extract = process_file(file_path, message, background_tasks)
                 print(extract)
 
                 # If the message is empty, set a default message
@@ -503,9 +530,9 @@ async def whatsapp(request: Request, background_tasks: BackgroundTasks):
                 if response["context"] == []:
                     formatted_string = f"{response["response"]} 😇"
                 elif parsed_data.get('Body', [''])[0].strip() == "":
-                    formatted_string = f"*User Query:*\n{message} 🔗\n\n*Response:*\n{response["response"]}\n\n\n*Recommended Resources 📚:*\n\n{context_lines}"
+                    formatted_string = f"*User Query:*\n{message} 🔗\n\n*Response:*\n{response["response"]}"
                 else:
-                    formatted_string = f"{response["response"]}\n\n\n*Recommended Resources 📚:*\n\n{context_lines}"
+                    formatted_string = f"{response["response"]}"
 
                 twilio.messages.create(
                         body=formatted_string,
@@ -521,5 +548,6 @@ async def whatsapp(request: Request, background_tasks: BackgroundTasks):
                     response_message = f"Error downloading file: {str(e)}"
         
         background_tasks.add_task(update_preload_data, chat_id)
+        background_tasks.add_task(fetch_resources, preloaded_data, chat_id, sender_number)
         
         return JSONResponse({'message': response_message})

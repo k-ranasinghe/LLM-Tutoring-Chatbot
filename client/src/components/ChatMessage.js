@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
 import { SpeakerWaveIcon, PauseIcon, PlayIcon, DocumentIcon, PhotoIcon, VideoCameraIcon, MusicalNoteIcon, MicrophoneIcon } from '@heroicons/react/24/solid';
 import { HandThumbUpIcon as HandThumbUpOutline, HandThumbDownIcon as HandThumbDownOutline } from '@heroicons/react/24/outline'; // Outline Icons
 import { HandThumbUpIcon as HandThumbUpSolid, HandThumbDownIcon as HandThumbDownSolid } from '@heroicons/react/24/solid'; // Solid Icons
 import LoadingAnimation from './LoadingAnimation';
 
-function ChatMessage({ text, type, shouldStream, mediaType, fileName, inputUserQuery, userId }) {
+function ChatMessage({ text, type, shouldStream, mediaType, fileName, inputUserQuery, userId, chatId }) {
   const isUser = type === 'user';
   const messageStyle = isUser ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800';
   const alignment = isUser ? 'self-end' : 'self-start';
@@ -19,10 +20,15 @@ function ChatMessage({ text, type, shouldStream, mediaType, fileName, inputUserQ
   const [showFeedbackPopup, setShowFeedbackPopup] = useState(false); // New state for showing feedback popup
   const [feedbackText, setFeedbackText] = useState(''); // New state to capture feedback text
   const audioRef = useRef(null); // Reference to audio object
+  const [recommendedResources, setRecommendedResources] = useState([]);
 
   // Split the message into main content and resources
   const mainContent = Array.isArray(text) ? text[0] : text;
-  const recommendedResources = Array.isArray(text) && text.length > 1 ? text.slice(1) : [];
+  const resources = Array.isArray(text) && text.length > 1 ? text.slice(1)[0] : [];
+  useEffect(() => {
+    const resources = Array.isArray(text) && text.length > 1 ? text.slice(1) : [];
+    setRecommendedResources(resources);
+  }, [text]);
 
   // Helper function to generate a random delay within a range (min, max)
   // This will be used to simulate the streaming/generative effect of ChatGPT
@@ -63,10 +69,11 @@ function ChatMessage({ text, type, shouldStream, mediaType, fileName, inputUserQ
         if (wordIndex < words.length) {
 
           // If you want the response to be generated faster/slower, change the vale range here
-          const randomDelay = getRandomDelay(0, 300); // Set random delay between 0ms and 300ms
+          const randomDelay = getRandomDelay(0, 100); // Set random delay between 0ms and 300ms
           setTimeout(streamText, randomDelay);
         } else {
           setIsStreamingComplete(true); // Mark as complete after all words are displayed
+          fetchRecommendedResources(); // Fetch recommended resources after streaming is complete
         }
       };
 
@@ -76,6 +83,30 @@ function ChatMessage({ text, type, shouldStream, mediaType, fileName, inputUserQ
       setIsStreamingComplete(true); // Immediately mark as complete if not streaming
     }
   }, [mainContent, shouldStream]);
+
+
+  const fetchRecommendedResources = async () => {
+      try {
+            const response = await fetch('http://localhost:8000/fetch-resources', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    input_text: userQuery, // Use the current user query
+                    response: mainContent, // Use the main response that was streamed
+                    chatId: chatId,
+                }),
+            });
+
+            const data = await response.json();
+            console.log('Recommended resources:', data);
+            setRecommendedResources(data); // Update state with new resources
+      } catch (error) {
+            console.error('Error fetching resources:', error);
+      }
+  };
+
 
   // Text-to-Speech (TTS) API Integration
   // This function handles the audio generation and playback for existing chat messages. 
@@ -201,6 +232,50 @@ function ChatMessage({ text, type, shouldStream, mediaType, fileName, inputUserQ
     setFeedbackText(''); // Reset feedback text
   };
 
+  const renderRecommendedResources = (resources) => {
+    const { 'YouTube Videos': youtubeVideos = [], 'Web Articles': webArticles = [] } = resources;
+  
+    return (
+      <div className="-mt-4 p-4">
+        {youtubeVideos.length > 0 && (
+          <>
+            <p className="text-lg font-bold mb-1 text-gray-800">▶️ YouTube Videos:</p>
+            <ul className="list-disc pl-8 space-y-0">
+              {youtubeVideos.map((video, index) => {
+                const [name, url] = video.split(': ').map(item => item.trim());
+                return (
+                  <li key={index}>
+                    <a href={url} target="_blank" rel="noopener noreferrer" className="text-sky-500 hover:text-gray-500 transition-colors">
+                      {name}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
+        {webArticles.length > 0 && (
+          <>
+            <p className="text-lg font-bold mt-6 mb-1 text-gray-800">📰 Web Articles:</p>
+            <ul className="list-disc pl-8 space-y-0">
+              {webArticles.map((article, index) => {
+                const [name, url] = article.split(': ').map(item => item.trim());
+                return (
+                  <li key={index}>
+                    <a href={url} target="_blank" rel="noopener noreferrer" className="text-sky-500 hover:text-gray-500 transition-colors">
+                      {name}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
+      </div>
+    );
+  };
+
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -213,16 +288,20 @@ function ChatMessage({ text, type, shouldStream, mediaType, fileName, inputUserQ
           {getMediaIcon(mediaType, fileName)}
         </div>
       )}
-      <pre style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', fontFamily: 'sans-serif' }}>{shouldStream ? displayedText : mainContent}</pre>
-
+      <ReactMarkdown 
+      className="whitespace-pre-wrap" 
+      components={{ 
+        // Add any custom components here if needed
+      }}
+    >
+      {shouldStream ? displayedText : mainContent}
+    </ReactMarkdown>
       {/* Only show recommended resources once the streaming is complete */}
-      {isStreamingComplete && recommendedResources.length > 0 && (
+      {isStreamingComplete && typeof resources === 'object' && Object.keys(resources).length > 0 && (
         <div className="mt-4">
-          <p className="text-lg font-semibold mb-2">Recommended Resources:</p>
+          <p className="text-xl font-semibold mb-2">Recommended Resources</p>
           <ul className="list-disc pl-5">
-            {recommendedResources.map((resource, index) => (
-              <li key={index}>{resource}</li>
-            ))}
+            {renderRecommendedResources(recommendedResources[0])}
           </ul>
           <div className="flex space-x-4">
             <button

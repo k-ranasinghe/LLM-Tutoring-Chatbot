@@ -11,6 +11,9 @@ assets/
 admin/backend/lectures/
 admin/backend/static/
 knowledge_base/
+model/file_embeddings/
+model/uploads/
+model/google_credentials.json
 /.pnp
 .pnp.js
 

@@ -1,4 +1,5 @@
 aiofiles
+cryptography
 fastapi
 google-generativeai
 groq
@@ -18,6 +19,7 @@ Pillow
 pydantic
 pydub
 PyMuPDF
+pymysql
 pytesseract
 python-docx
 python-dotenv

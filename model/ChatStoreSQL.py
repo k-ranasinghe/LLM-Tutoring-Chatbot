@@ -454,3 +454,159 @@ def delete_chat(chat_id):
         connection.close()
 
     print(f"Chat with ChatID {chat_id} has been successfully deleted.")
+
+
+# Function to insert data into the mentor_notes table
+def insert_mentor_notes(data):
+    try:
+        connection = get_mysql_connection()
+        cursor = connection.cursor()
+
+        insert_query = """
+            INSERT INTO mentor_notes (
+                week_no, 
+                has_attended, 
+                activity_summary, 
+                communication_rating, 
+                leadership_rating, 
+                behaviour_rating, 
+                responsiveness_rating, 
+                difficult_concepts, 
+                understood_concepts, 
+                student_id, 
+                staff_id, 
+                course_id, 
+                date_created
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+        """
+
+        cursor.execute(insert_query, (
+            data['week_no'],
+            data['has_attended'],
+            data['activity_summary'],
+            data['communication_rating'],
+            data['leadership_rating'],
+            data['behaviour_rating'],
+            data['responsiveness_rating'],
+            data['difficult_concepts'],
+            data['understood_concepts'],
+            data['student_id'],
+            data['staff_id'],
+            data['course_id'],
+            data['date_created']
+        ))
+
+        connection.commit()
+        cursor.close()
+        connection.close()
+
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+        raise 
+
+
+# Function to get mentor notes for a specific student_id
+def get_mentor_notes(student_id):
+    try:
+        connection = get_mysql_connection()
+        cursor = connection.cursor(dictionary=True)  # Enable dictionary cursor for easy access to column names
+
+        query = """
+            SELECT 
+                week_no, 
+                has_attended, 
+                activity_summary, 
+                communication_rating, 
+                leadership_rating, 
+                behaviour_rating, 
+                responsiveness_rating, 
+                difficult_concepts, 
+                understood_concepts, 
+                student_id, 
+                staff_id, 
+                course_id, 
+                date_created,
+                id
+            FROM mentor_notes 
+            WHERE student_id = %s;
+        """
+
+        cursor.execute(query, (student_id,))
+        results = cursor.fetchall()
+
+        cursor.close()
+        connection.close()
+
+        return results
+
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+        raise
+
+
+def store_mentor_query(student_id, query, chatbot_response):
+    connection = get_mysql_connection()
+    cursor = connection.cursor()
+
+    try:
+        insert_query = """
+            INSERT INTO mentor_queries (studentid, query, chatbot_response)
+            VALUES (%s, %s, %s);
+        """
+        cursor.execute(insert_query, (student_id, query, chatbot_response))
+        connection.commit()
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+        connection.rollback()
+    finally:
+        cursor.close()
+        connection.close()
+
+
+def get_mentor_queries():
+    connection = get_mysql_connection()
+    cursor = connection.cursor()
+    try:
+        cursor.execute("SELECT * FROM mentor_queries WHERE answered = FALSE")  # Adjust your query as needed
+        queries = cursor.fetchall()
+        cursor.close()
+        connection.close()
+        return queries
+    except Exception as e:
+        print("Error updating query response:", e)
+        raise e
+
+
+
+def respond_to_query(query_id: int, mentor_response: str, mentor_id: str):
+    connection = get_mysql_connection()
+    cursor = connection.cursor()
+    
+    try:
+        cursor.execute("""
+            UPDATE mentor_queries
+            SET mentor_response = %s, mentorid = %s, answered = TRUE
+            WHERE id = %s
+        """, (mentor_response, mentor_id, query_id))
+        connection.commit()
+    except Exception as e:
+        print("Error updating query response:", e)
+        raise e
+    finally:
+        cursor.close()
+        connection.close()
+
+
+def delete_mentor_query_by_id(query_id: str):
+    connection = get_mysql_connection()
+    cursor = connection.cursor()
+    
+    try:
+        cursor.execute("DELETE FROM mentor_queries WHERE id = %s", (query_id,))
+        connection.commit()
+    except Exception as e:
+        print("Error deleting query:", e)
+        raise e
+    finally:
+        cursor.close()
+        connection.close()

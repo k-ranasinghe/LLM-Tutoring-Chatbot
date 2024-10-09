@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { Container, TextField, Button, Grid, Typography, IconButton, Box } from "@mui/material";
+import { Container, TextField, Button, Typography, IconButton, Box, List, ListItem, ListItemText, } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import SideBar from "../components/SideBar.tsx";
 
 const ManageFiles: React.FC = () => {
   const [files, setFiles] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+
+  // Filtered files based on search query
+  const filteredFiles = files.filter((file) =>
+    file.file_name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   useEffect(() => {
     fetchFiles();
@@ -16,7 +22,7 @@ const ManageFiles: React.FC = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        `http://127.0.0.1:8001/api/material/search/?q=${query}`
+        `http://127.0.0.1:8000/get-files`
       );
       if (!response.ok) throw new Error("Failed to fetch files");
       const data = await response.json();
@@ -42,19 +48,20 @@ const ManageFiles: React.FC = () => {
 
     try {
       const response = await fetch(
-        `http://127.0.0.1:8001/api/material/delete/${id}/`,
+        `http://127.0.0.1:8000/delete-file/${id}`,
         {
           method: "DELETE",
         }
       );
-      if (response.status === 204) {
-        alert("File deleted successfully");
-        setFiles(files.filter((file) => file.id !== id));
-      } else {
-        throw new Error("Failed to delete file");
+
+      if (!response.ok) {
+        throw new Error("Failed to delete the file");
       }
+
+      alert("File deleted successfully");
+      fetchFiles(); // Refresh the list of recent files
     } catch (error) {
-      console.error(error);
+      console.error("Error deleting file:", error);
       alert("Error deleting file");
     }
   };
@@ -64,19 +71,22 @@ const ManageFiles: React.FC = () => {
   };
 
   return (
-    <Container>
-      <Typography variant="h4" gutterBottom>
-        Manage Files
-      </Typography>
-      <Box mb={3}>
-        <TextField
-          label="Search"
-          variant="outlined"
-          value={searchQuery}
-          onChange={handleSearchChange}
-          fullWidth
-        />
-        <Button
+    <Box sx={{ display: 'flex' }}>  {/* Flex container for sidebar and content */}
+      <SideBar />
+      <Box sx={{ flexGrow: 1, padding: 3 }}>
+        <Container>
+          <Typography variant="h4" gutterBottom>
+            Manage Files
+          </Typography>
+          <Box mb={3}>
+            <TextField
+              label="Search"
+              variant="outlined"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              fullWidth
+            />
+            {/* <Button
           variant="contained"
           color="primary"
           onClick={handleSearch}
@@ -84,9 +94,34 @@ const ManageFiles: React.FC = () => {
           style={{ marginTop: 10 }}
         >
           Search
-        </Button>
-      </Box>
-      <Grid container spacing={2}>
+        </Button> */}
+            <List>
+              {filteredFiles.map((file) => (
+                <ListItem
+                  key={file.id}
+                  sx={{
+                    border: "1px solid #ddd",
+                    borderRadius: 1,
+                    marginBottom: 1,
+                  }}
+                >
+                  <ListItemText
+                    primary={file.file_name}
+                    secondary={`Uploaded on: ${file.uploaded_at.slice(0, 10)}`}
+                  />
+                  <div>
+                    <IconButton color="primary" onClick={() => handleEdit(file.id)}>
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton color="error" onClick={() => handleDelete(file.id)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </div>
+                </ListItem>
+              ))}
+            </List>
+          </Box>
+          {/* <Grid container spacing={2}>
         {files.map((file) => (
           <Grid item xs={12} key={file.id}>
             <Box
@@ -112,8 +147,10 @@ const ManageFiles: React.FC = () => {
             </Box>
           </Grid>
         ))}
-      </Grid>
-    </Container>
+      </Grid> */}
+        </Container>
+      </Box>
+    </Box>
   );
 };
 

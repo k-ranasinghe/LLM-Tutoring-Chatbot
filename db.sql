@@ -130,6 +130,35 @@ CREATE TABLE feedback (
     feedback TEXT
 );
 
+
+CREATE TABLE mentor_notes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    week_no INT NOT NULL,
+    has_attended BOOLEAN NOT NULL,
+    activity_summary TEXT NOT NULL,
+    communication_rating INT NOT NULL,
+    leadership_rating INT NOT NULL,
+    behaviour_rating INT NOT NULL,
+    responsiveness_rating INT NOT NULL,
+    difficult_concepts TEXT,
+    understood_concepts TEXT,
+    student_id VARCHAR(255) NOT NULL,
+    staff_id VARCHAR(255) NOT NULL,
+    course_id VARCHAR(255) NOT NULL,
+    date_created DATETIME NOT NULL
+);
+
+
+CREATE TABLE mentor_queries (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    studentid VARCHAR(255) NOT NULL,
+    query TEXT NOT NULL,
+    chatbot_response TEXT NOT NULL,
+    answered BOOLEAN DEFAULT FALSE,
+    mentor_response TEXT,
+    mentorid VARCHAR(255)
+);
+
 select * from User_data;
 select * from User_chats;
 select * from Chat_data;
@@ -138,3 +167,6 @@ select * from Mentor_notes;
 select * from Curriculum;
 select * from Personalization_instructions;
 select * from feedback;
+select * from lecture_materials;
+select * from mentor_notes;
+select * from mentor_queries;

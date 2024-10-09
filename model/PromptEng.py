@@ -111,9 +111,9 @@ def get_template():
     You are provided with the feedback taken from the user based on previous conversations. Use this feedback to improve your responses.
     **Feedback:** {feedback}
 
-    You are provided with notes taken by mentors on this user for the courses 'Programming' and '3D Design'. Use these notes to tailor your responses to the user's learning needs. Use the relevant course notes based on user query. Adapt your explanations based on each student's level of understanding, preferences, and learning pace provided in these mentor notes.
-    - **Programming Course Mentor Notes:** {programming_notes}
-    - **3D Design Course Mentor Notes:** {3Ddesign_notes}
+    You are provided with notes taken by mentors evaluating the competency of this user. These mentor notes contain ratings on communication, leadership, behaviour, and understanding. Additional feedback is provided on the user's learning style and preferences.
+    Use these notes to tailor your responses to the user's learning needs. Use the relevant course notes based on user query. Adapt your explanations based on the feedback provided in these mentor notes.
+    **Mentor Notes:** {mentor_notes}
 
     Remember to keep responses concise and between 100-150 words, and directly address the user in the first person. Use the provided context and conversation summary to inform your responses, but do not reference them explicitly.
 
@@ -144,7 +144,7 @@ def get_template():
         example_prompt=example_prompt,
         prefix=prefix,
         suffix=suffix,
-        input_variables=["context", "input", "extract", "chat_summary", "student_type", "learning_style", "communication_format", "tone_style", "reasoning_framework", "programming_notes", "3Ddesign_notes", "feedback"],
+        input_variables=["context", "input", "extract", "chat_summary", "student_type", "learning_style", "communication_format", "tone_style", "reasoning_framework", "mentor_notes", "feedback"],
         example_separator="\n\n"
     )
 

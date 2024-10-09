@@ -28,13 +28,53 @@ from langchain_community.document_loaders import (
     UnstructuredXMLLoader
 )
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_chroma import Chroma
+from langchain.schema import Document
+from fastapi import BackgroundTasks
 
 
 # Load environment variables from .env file
 load_dotenv()
 client = Groq(api_key=os.getenv('GROQ_API_KEY'))
+embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
+chroma = Chroma(persist_directory="file_embeddings", embedding_function=embeddings)
 
-def process_file(file_path):
+def clear_vector_db():
+    """Function to completely remove all embeddings from the vector database without deleting the collection."""
+    
+    # Get all documents and ensure they contain 'ids'
+    documents = chroma.get()
+    
+    # Ensure 'ids' exists and proceed with deletion
+    ids_to_delete = documents.get('ids', [])
+    
+    if ids_to_delete:
+        # Delete the documents based on the ids
+        chroma.delete(ids=ids_to_delete)
+        print(f"Cleared {len(ids_to_delete)} vectors from the database.")
+    else:
+        print("No documents found to delete.")
+
+
+def contents_reduce(contents, input_text):
+    if len(contents) <= 5:
+        return contents
+    chroma.add_documents(contents)
+    query_embedding = embeddings.embed_query(input_text)
+    similar_vectors = chroma.similarity_search_by_vector(query_embedding, k=5)
+    
+    return similar_vectors
+
+def create_documents(contents):
+    documents = []
+    for doc in contents:
+        document = Document(page_content=contents[doc])
+        documents.append(document)
+    
+    return documents
+
+def process_file(file_path, input_text, background_tasks: BackgroundTasks):
     # Get the file's MIME type to determine its format
     mime_type, _ = mimetypes.guess_type(file_path)
     filename = os.path.basename(file_path)
@@ -52,21 +92,28 @@ def process_file(file_path):
     
     # Check for PDF (application/pdf)
     elif mime_type == 'application/pdf':
-        captions = process_pdf(file_path)
-        documents = process_text_documents(file_path)
+        all_captions = process_pdf(file_path)
+        captions = contents_reduce(all_captions, input_text)
+        all_documents = process_text_documents(file_path)
+        documents = contents_reduce(all_documents, input_text)
+        background_tasks.add_task(clear_vector_db)
         return {"format": mime_type, "filename": filename, "documents": documents, "image-captions": captions}
     
     # Check for video files (e.g., mp4)
     elif mime_type and mime_type.startswith('video'):
-        captions = process_video(file_path)
+        all_captions = process_video(file_path)
+        captions = contents_reduce(all_captions, input_text)
         transcript = transcribe_audio(file_path)
+        background_tasks.add_task(clear_vector_db)
         return {"format": mime_type, "filename": filename, "transcription": transcript, "captions": captions}
     
     # Check for text files or documents
     elif mime_type in ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/html', 'text/markdown', 'application/epub+zip',
                         'application/msword', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/xml',
                         'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'text/x-python', 'text/plain']:
-        documents = process_text_documents(file_path)
+        all_documents = process_text_documents(file_path)
+        documents = contents_reduce(all_documents, input_text)
+        background_tasks.add_task(clear_vector_db)
         return {"format": mime_type, "filename": filename, "documents": documents}
 
     else:
@@ -293,11 +340,12 @@ def process_pdf(pdf_path):
     output_dir = "extracted_images"
     extract_images_from_pdf(pdf_path, output_dir)
     captions = generate_captions_for_images(output_dir)
+    documents = create_documents(captions)
 
     # Clean up the output directory. This directory was created to store the extracted images
     if os.path.exists(output_dir):
         shutil.rmtree(output_dir)
-    return captions
+    return documents
 
 ######################### VIDEO PROCESSING ##########################
 def extract_frames_from_video(video_path, output_dir, desired_fps=None):
@@ -425,12 +473,13 @@ def process_video(video_path):
     output_dir = "extracted_frames"
     extract_frames_from_video(video_path, output_dir, desired_fps=1)
     transcriptions = transcribe_frames(output_dir)
-    print(transcriptions)
-
+    documents = create_documents(transcriptions)
+    
     # Clean up the output directory. This directory was created to store the extracted frames/images
     if os.path.exists(output_dir):
         shutil.rmtree(output_dir)
-    return transcriptions
+    return documents
+
 
 ######################### TEXT DOCUMENT PROCESSING ##################
 def text_preprocess(input_dir):
