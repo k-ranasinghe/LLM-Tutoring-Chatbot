@@ -18,8 +18,8 @@ model=ChatGroq(groq_api_key=groq_api_key, model_name="llama3-70b-8192")
 SERVICE_ACCOUNT_FILE = 'google_credentials.json'
 YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 
-# Custom Search Engine ID (replace with your own)
-CSE_ID = '91c3f3444b248437b'
+# Custom Search Engine ID
+CSE_ID = os.getenv('CSE_ID')
 
 def fetch_youtube_videos(query, max_results=3):
     """
