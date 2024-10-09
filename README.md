@@ -7,11 +7,15 @@ model/
 ```sh
 OPENAI_API_KEY=
 GEMINI_API_KEY=
+YOUTUBE_API_KEY=
 LANGCHAIN_API_KEY=
 GROQ_API_KEY=
 PINECONE_API_KEY=
 PINECONE_INDEX=
 LANGCHAIN_PROJECT=
+
+# Custom Search Engine ID
+CSE_ID=
 
 MYSQL_HOST=
 MYSQL_USER=
@@ -22,20 +26,9 @@ TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
 ```
 
-
-admin/backend/api 
-```sh
-GOOGLE_API_KEY=
-HF_TOKEN=
-GROQ_API_KEY=
-PINECONE_API_KEY=
-PINECONE_INDEX=
-
-MYSQL_HOST=
-MYSQL_USER=
-MYSQL_PASSWORD=
-MYSQL_DB=
-```
+<br>Get the API keys for Gemini and YouTube from [here](https://console.cloud.google.com/apis/dashboard).<br><br>
+Enable Custom Search API from [here](https://console.cloud.google.com/apis/dashboard). Create a service account and get the json file containing the credentials. Paste the file inside the model directory.<br><br>
+Create a Custom Search Engine from [here](https://programmablesearchengine.google.com). Get the search engine id and add it as `CSE_ID` to the `.env` file.
 
 ## Setup
 
@@ -55,23 +48,6 @@ pip install -r requirements.txt
 uvicorn server:app --reload
 ```
 
-Frontend Admin (port=3001)
-```sh
-cd admin/frontend
-npm install
-npm run dev
-```
-
-Backend Admin (port=8001)
-```sh
-cd admin
-python -m venv venv
-venv/Scripts/activate
-cd backend
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver
-```
 
 Host Backend for whatsapp
 ```sh
