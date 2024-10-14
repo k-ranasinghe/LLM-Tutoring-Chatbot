@@ -59,7 +59,7 @@ export default function SignUpPage() {
                     <form className="space-y-6" onSubmit={handleSubmit}>
                         <div>
                             <label htmlFor="email" className="block text-sm font-medium leading-6 text-customtxt">
-                                Email address
+                                Email Address
                             </label>
                             <div className="mt-2">
                                 <input
