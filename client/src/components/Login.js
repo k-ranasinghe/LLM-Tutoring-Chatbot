@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Cookies from 'js-cookie';
 
 export default function Login() {
-  const [buttonColor, setButtonColor] = useState("#33495d");
+  const [buttonColor, setButtonColor] = useState("#4038be99");
   const [isCorrectPwd, setIsCorrectPwd] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

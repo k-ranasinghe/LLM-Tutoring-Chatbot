@@ -1,6 +1,8 @@
 import Header from '../components/Header';
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 export default function SignUpPage() {
     const [email, setEmail] = useState('');
@@ -8,7 +10,7 @@ export default function SignUpPage() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [dateOfBirth, setDateOfBirth] = useState('');
     const [isPasswordMatch, setIsPasswordMatch] = useState(true);
-    const [buttonColor, setButtonColor] = useState("#33495d");
+    const [buttonColor, setButtonColor] = useState("#4038be99");
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -18,8 +20,9 @@ export default function SignUpPage() {
             setIsPasswordMatch(false);
             return;
         }
+        const formattedDateOfBirth = dateOfBirth ? dateOfBirth.toISOString().split('T')[0] : '';
 
-        const formData = { email, password, dateOfBirth };
+        const formData = { email, password, dateOfBirth: formattedDateOfBirth };
 
         try {
             const response = await fetch('http://127.0.0.1:8000/register', {
@@ -114,14 +117,16 @@ export default function SignUpPage() {
                                 Date of Birth
                             </label>
                             <div className="mt-2">
-                                <input
-                                    id="dateOfBirth"
-                                    name="dateOfBirth"
-                                    type="date"
-                                    required
-                                    value={dateOfBirth}
-                                    onChange={(e) => setDateOfBirth(e.target.value)}
+                                <DatePicker
+                                    selected={dateOfBirth}
+                                    onChange={(date) => setDateOfBirth(date)}
                                     className="block w-full rounded-md py-1.5 px-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                    dateFormat="yyyy-MM-dd"
+                                    placeholderText="Select a date"
+                                    required
+                                    showYearDropdown
+                                    yearDropdownItemNumber={50}
+                                    scrollableYearDropdown
                                 />
                             </div>
                         </div>

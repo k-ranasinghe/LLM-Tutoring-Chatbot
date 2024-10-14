@@ -189,12 +189,17 @@ def calculate_student_type(dob):
     age = today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
     
     # Determine student type based on age
-    if 10 <= age <= 15:
+    # if 10 <= age <= 15:
+    #     return "type1"
+    # elif 16 <= age <= 18:
+    #     return "type2"
+    # else:
+    #     return None
+    if age <= 15:
         return "type1"
-    elif 16 <= age <= 18:
-        return "type2"
     else:
-        return None  # For users outside the 10-18 range, no specific type
+        return "type2"
+
 
 # This function handles existing and new chat personalization parameters
 def update_personalization_params(chat_id, UserID, chat_title, learning_style, communication_format, tone_style, reasoning_framework):
