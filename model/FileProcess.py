@@ -143,7 +143,7 @@ def transcribe_chunk(file_path):
         file_content = audio_file.read()
     transcription = client.audio.transcriptions.create(
         file=(os.path.basename(file_path), file_content),
-        model="distil-whisper-large-v3-en",
+        model="whisper-large-v3-turbo",
         response_format="json",
         language="en",
         temperature=0.0

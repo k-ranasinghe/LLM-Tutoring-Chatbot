@@ -3,9 +3,9 @@ import React from 'react';
 
 function Footer() {
   return (
-    <footer className="bg-white shadow-md w-full font-sans">
-      <div className="container mx-auto p-4 text-center">
-        <p className="text-gray-700">© 2024 RoboticGen</p>
+    <footer style={{ backgroundColor: '#212121' }} className="shadow-md w-full font-sans">
+      <div className="container mx-auto text-center">
+        <p className="text-gray-500">© 2024 RoboticGen</p>
       </div>
     </footer>
   );

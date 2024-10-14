@@ -130,11 +130,27 @@ const UploadFiles: React.FC = () => {
       <Box sx={{ display: 'flex' }}>  {/* Flex container for sidebar and content */}
         <SideBar />
         <Box sx={{ flexGrow: 1, padding: 3 }}>  {/* Content area with padding */}
+          <style>
+            {`
+              ::-webkit-scrollbar {
+                width: 20px; /* Width of the scrollbar */
+                background: transparent; /* Transparent background */
+              }
+              ::-webkit-scrollbar-thumb {
+                background-color: rgba(90, 90, 90, 0.8); /* Lighter thumb color */
+                border-left: 4px solid #212121;
+                border-right: 4px solid #212121;
+              }
+              ::-webkit-scrollbar-thumb:hover {
+                background: rgba(90, 90, 90, 1); /* Darker thumb on hover */
+              }
+            `}
+          </style>
           <Container sx={{ marginTop: "10vh" }}>
             <Typography variant="h4" gutterBottom>
               Upload Files
             </Typography>
-            <Box mt={4} p={3} border={1} borderRadius="8px" bgcolor="#f9f9f9">
+            <Box mt={4} p={3} borderRadius="15px" bgcolor="#171717">
               <Typography variant="h5" gutterBottom>
                 Supported File Formats
               </Typography>

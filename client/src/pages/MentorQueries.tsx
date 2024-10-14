@@ -113,7 +113,23 @@ const MentorQueries: React.FC = () => {
         <Box sx={{ display: 'flex' }}>
             <SideBar />
             <Box sx={{ flexGrow: 1, padding: 3 }}>
-                <Container sx={{ marginTop: "10vh", backgroundColor: "#f5f5f5", borderRadius: "8px", padding: 3 }}>
+                <style>
+                    {`
+                        ::-webkit-scrollbar {
+                            width: 20px; /* Width of the scrollbar */
+                            background: transparent; /* Transparent background */
+                        }
+                        ::-webkit-scrollbar-thumb {
+                            background-color: rgba(90, 90, 90, 0.8); /* Lighter thumb color */
+                            border-left: 4px solid #212121;
+                            border-right: 4px solid #212121;
+                        }
+                        ::-webkit-scrollbar-thumb:hover {
+                            background: rgba(90, 90, 90, 1); /* Darker thumb on hover */
+                        }
+                    `}
+                </style>
+                <Container sx={{ marginTop: "10vh", backgroundColor: "#171717", borderRadius: "8px", padding: 3 }}>
                     <Typography variant="h4" gutterBottom>
                         Mentor Queries
                     </Typography>
@@ -129,11 +145,11 @@ const MentorQueries: React.FC = () => {
                                             button
                                             onClick={() => handleSelectQuery(query.id)}
                                             sx={{
-                                                backgroundColor: selectedQueryId === query.id ? '#e0f7fa' : 'transparent',
+                                                backgroundColor: selectedQueryId === query.id ? '#2f2f2f' : 'transparent',
                                                 transition: 'background-color 0.3s',
                                                 borderRadius: '4px',
                                                 '&:hover': {
-                                                    backgroundColor: '#b2ebf2',
+                                                    backgroundColor: '#2f2f2f55',
                                                 },
                                             }}
                                         >

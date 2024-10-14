@@ -4,7 +4,7 @@ USE chatbot;
 
 CREATE TABLE User_data (
     UserID VARCHAR(50) PRIMARY KEY,
-    Password VARCHAR(50),
+    Password VARCHAR(255),
     Date_of_birth DATE
 );
 

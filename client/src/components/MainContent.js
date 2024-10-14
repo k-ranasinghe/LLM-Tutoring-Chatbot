@@ -34,13 +34,13 @@ function MainContent({ isSidebarOpen, chatId }) {
           "Content-Type": "multipart/form-data",
         },
       });
-  
+
       const botMessage = response.data['response'];
       const botContext = response.data['context'];
 
       setMessages((prevMessages) => [
         ...prevMessages,
-        { text: [botMessage, botContext], type: 'bot', shouldStream: true, mediaType: 'text', fileName:'text', userQuery: message.text },
+        { text: [botMessage, botContext], type: 'bot', shouldStream: true, mediaType: 'text', fileName: 'text', userQuery: message.text },
       ]);
 
     } catch (error) {
@@ -53,30 +53,30 @@ function MainContent({ isSidebarOpen, chatId }) {
   const loadChat = async (selectedChatId) => {
     try {
       const response = await axios.get(`http://localhost:8000/get-chat?chat_id=${selectedChatId}`);
-      const chatHistory = response.data.messages; 
-  
+      const chatHistory = response.data.messages;
+
       // Iterate through each message in the chat history and add it to the state
       chatHistory.forEach((msg) => {
         if (msg.type === 'human') {
           const mediaType = msg.response_metadata["mediaType"];
           const fileName = msg.response_metadata["fileName"];
-          
+
           setMessages((prevMessages) => [
             ...prevMessages,
-            { text: [msg.content], type: 'user', shouldStream: false, mediaType: mediaType, fileName:fileName }, // Wrap the user message in an array
+            { text: [msg.content], type: 'user', shouldStream: false, mediaType: mediaType, fileName: fileName }, // Wrap the user message in an array
           ]);
         } else if (msg.type === 'ai') {
           // If the bot message contains context, ensure it’s added correctly
           const botMessage = msg.content;
           const botContext = msg.response_metadata["context"];
-  
+
           setMessages((prevMessages) => [
             ...prevMessages,
-            { text: [botMessage, botContext], type: 'bot', shouldStream: false, mediaType: 'text', fileName:'text' }, // Combine bot message and context
+            { text: [botMessage, botContext], type: 'bot', shouldStream: false, mediaType: 'text', fileName: 'text' }, // Combine bot message and context
           ]);
         }
       });
-  
+
     } catch (error) {
       console.error('Error loading chat:', error);
     }
@@ -99,27 +99,31 @@ function MainContent({ isSidebarOpen, chatId }) {
   }, [messages]);
 
   return (
-    <div className={`flex-grow flex flex-col ${isSidebarOpen ? 'ml-64' : 'ml-20'} transition-all duration-300 font-sans h-[calc(80vh-4rem)]`}>
-      {/* Adjust the height according to the combined height of Header and Footer */}
+    <div className={`flex-grow flex flex-col ${isSidebarOpen ? 'ml-32' : 'ml-20'} transition-all duration-300 font-sans h-[calc(80vh-4rem)]`}>
+      <style>
+        {`
+      ::-webkit-scrollbar {
+        width: 20px; /* Width of the scrollbar */
+        background: transparent; /* Transparent background */
+      }
+      ::-webkit-scrollbar-thumb {
+        background-color: rgba(90, 90, 90, 0.8); /* Lighter thumb color */
+        border-left: 4px solid #212121;
+        border-right: 4px solid #212121;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(90, 90, 90, 1); /* Darker thumb on hover */
+      }
+    `}
+      </style>
       <div className="flex flex-col flex-grow overflow-hidden">
-        <div
-          className="flex-grow overflow-y-auto p-4"
-          style={{
-            scrollbarWidth: 'none', /* For Firefox */
-            msOverflowStyle: 'none', /* For Internet Explorer and Edge */
-          }}
-        >
-          <style>  {/* For Chrome, Safari, and Opera */}
-            {`
-              .hide-scrollbar::-webkit-scrollbar {
-                display: none;
-              }
-            `}
-          </style>
+        <div className="flex-grow overflow-y-auto p-4 pr-32">
           <Chat messages={messages} isLoading={isLoading} userId={userId} chatId={chatId} />
           <div ref={chatEndRef} /> {/* Scroll to this ref */}
         </div>
-        <PromptInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+        <div className="pr-32">
+          <PromptInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+        </div>
       </div>
     </div>
   );

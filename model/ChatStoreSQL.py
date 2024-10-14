@@ -1,6 +1,6 @@
 import os
 import json
-import datetime
+from datetime import datetime, date
 import mysql.connector
 #import pymysql
 from langchain_core.messages import HumanMessage, AIMessage
@@ -184,7 +184,7 @@ def get_personalization_params(ChatID):
 
 def calculate_student_type(dob):
     # Calculate the user's age based on DOB
-    today = datetime.date.today()
+    today = date.today()
     birthdate = dob
     age = today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
     
@@ -606,6 +606,42 @@ def delete_mentor_query_by_id(query_id: str):
         connection.commit()
     except Exception as e:
         print("Error deleting query:", e)
+        raise e
+    finally:
+        cursor.close()
+        connection.close()
+
+
+# Function to check if user exists
+def get_user(userid: str):
+    try:
+        connection = get_mysql_connection()
+        cursor = connection.cursor()
+
+        select_query = "SELECT Password FROM User_data WHERE UserID = %s"
+        cursor.execute(select_query, (userid,))
+        user_data = cursor.fetchone()
+        return user_data
+    except Exception as e:
+        raise e
+    finally:
+        cursor.close()
+        connection.close()
+
+
+# Function to register a new user
+def create_user(email: str, hashed_password: str, dob: date):
+    try:
+        connection = get_mysql_connection()
+        cursor = connection.cursor()
+
+        insert_query = """
+            INSERT INTO User_data (UserID, Password, Date_of_birth)
+            VALUES (%s, %s, %s)
+        """
+        cursor.execute(insert_query, (email, hashed_password, dob))
+        connection.commit()
+    except Exception as e:
         raise e
     finally:
         cursor.close()

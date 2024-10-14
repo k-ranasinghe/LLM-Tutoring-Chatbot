@@ -29,3 +29,9 @@ Requests
 twilio
 unstructured
 uvicorn
+passlib
+
+
+httpx
+pytest
+pytest-asyncio

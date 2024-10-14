@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Container, TextField, Button, Typography, IconButton, Box, List, ListItem, ListItemText, } from "@mui/material";
+import { Container, TextField, Typography, IconButton, Box, List, ListItem, ListItemText, } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SideBar from "../components/SideBar.tsx";
@@ -7,7 +7,6 @@ import SideBar from "../components/SideBar.tsx";
 const ManageFiles: React.FC = () => {
   const [files, setFiles] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
 
   // Filtered files based on search query
   const filteredFiles = files.filter((file) =>
@@ -19,7 +18,6 @@ const ManageFiles: React.FC = () => {
   }, []);
 
   const fetchFiles = async (query: string = "") => {
-    setLoading(true);
     try {
       const response = await fetch(
         `http://127.0.0.1:8000/get-files`
@@ -30,17 +28,11 @@ const ManageFiles: React.FC = () => {
     } catch (error) {
       console.error(error);
       alert("Error fetching files");
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.target.value);
-  };
-
-  const handleSearch = () => {
-    fetchFiles(searchQuery);
   };
 
   const handleDelete = async (id: number) => {
@@ -74,6 +66,22 @@ const ManageFiles: React.FC = () => {
     <Box sx={{ display: 'flex' }}>  {/* Flex container for sidebar and content */}
       <SideBar />
       <Box sx={{ flexGrow: 1, padding: 3 }}>
+        <style>
+          {`
+              ::-webkit-scrollbar {
+                width: 20px; /* Width of the scrollbar */
+                background: transparent; /* Transparent background */
+              }
+              ::-webkit-scrollbar-thumb {
+                background-color: rgba(90, 90, 90, 0.8); /* Lighter thumb color */
+                border-left: 4px solid #212121;
+                border-right: 4px solid #212121;
+              }
+              ::-webkit-scrollbar-thumb:hover {
+                background: rgba(90, 90, 90, 1); /* Darker thumb on hover */
+              }
+            `}
+        </style>
         <Container>
           <Typography variant="h4" gutterBottom>
             Manage Files

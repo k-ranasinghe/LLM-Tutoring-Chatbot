@@ -60,7 +60,7 @@ def transcribe_chunk(file, file_name):
     """Transcribes a single audio chunk using the Whisper API."""
     transcription = client.audio.transcriptions.create(
         file=(file_name, file),  # Required audio file
-        model="distil-whisper-large-v3-en",
+        model="whisper-large-v3-turbo",
         response_format="json",
         language="en",
         temperature=0.0

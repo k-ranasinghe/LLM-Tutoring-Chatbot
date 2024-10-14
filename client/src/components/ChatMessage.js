@@ -8,7 +8,7 @@ import LoadingAnimation from './LoadingAnimation';
 
 function ChatMessage({ text, type, shouldStream, mediaType, fileName, inputUserQuery, userId, chatId }) {
   const isUser = type === 'user';
-  const messageStyle = isUser ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800';
+  const messageStyle = isUser ? 'bg-custombg1 text-customtxt' : 'bg-custombg text-customtxt';
   const alignment = isUser ? 'self-end' : 'self-start';
   const [displayedText, setDisplayedText] = useState('');
   const [isStreamingComplete, setIsStreamingComplete] = useState(false); // New state for tracking streaming completion
@@ -178,7 +178,7 @@ function ChatMessage({ text, type, shouldStream, mediaType, fileName, inputUserQ
       return (
         <div className="flex items-center space-x-2">
           {icon}
-          <span className="text-m font-bold text-white truncate" style={{ fontFamily: 'Inter' }}>{fileName}</span>
+          <span className="text-m font-bold text-customtxt truncate" style={{ fontFamily: 'Inter' }}>{fileName}</span>
         </div>
       );
     }
@@ -239,13 +239,13 @@ function ChatMessage({ text, type, shouldStream, mediaType, fileName, inputUserQ
       <div className="-mt-4 p-4">
         {youtubeVideos.length > 0 && (
           <>
-            <p className="text-lg font-bold mb-1 text-gray-800">▶️ YouTube Videos:</p>
+            <p className="text-lg font-bold mb-1 text-customtxt">▶️ YouTube Videos:</p>
             <ul className="list-disc pl-8 space-y-0">
               {youtubeVideos.map((video, index) => {
                 const [name, url] = video.split(': ').map(item => item.trim());
                 return (
                   <li key={index}>
-                    <a href={url} target="_blank" rel="noopener noreferrer" className="text-sky-500 hover:text-gray-500 transition-colors">
+                    <a href={url} target="_blank" rel="noopener noreferrer" className="text-sky-600 hover:text-gray-500 transition-colors">
                       {name}
                     </a>
                   </li>
@@ -256,13 +256,13 @@ function ChatMessage({ text, type, shouldStream, mediaType, fileName, inputUserQ
         )}
         {webArticles.length > 0 && (
           <>
-            <p className="text-lg font-bold mt-6 mb-1 text-gray-800">📰 Web Articles:</p>
+            <p className="text-lg font-bold mt-6 mb-1 text-customtxt">📰 Web Articles:</p>
             <ul className="list-disc pl-8 space-y-0">
               {webArticles.map((article, index) => {
                 const [name, url] = article.split(': ').map(item => item.trim());
                 return (
                   <li key={index}>
-                    <a href={url} target="_blank" rel="noopener noreferrer" className="text-sky-500 hover:text-gray-500 transition-colors">
+                    <a href={url} target="_blank" rel="noopener noreferrer" className="text-sky-600 hover:text-gray-500 transition-colors">
                       {name}
                     </a>
                   </li>
@@ -281,7 +281,7 @@ function ChatMessage({ text, type, shouldStream, mediaType, fileName, inputUserQ
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className={`p-4 rounded-lg my-2 max-w-xl ${messageStyle} ${alignment}`}
+      className={`p-4 rounded-2xl my-2 max-w-xl ${messageStyle} ${alignment}`}
     >
       {mediaType && mediaType !== 'text' && (
         <div className="flex items-center mb-2">
@@ -307,7 +307,7 @@ function ChatMessage({ text, type, shouldStream, mediaType, fileName, inputUserQ
             <button
               onClick={handleSpeak}
               disabled={isAudioLoading} // Disable button while audio is loading
-              className="p-2 bg-gray-300 rounded-full hover:bg-gray-400 flex items-center justify-center"
+              className="p-2 bg-gray-300 rounded-full hover:bg-sky-500 flex items-center justify-center hover:scale-125 transition-transform duration-200"
               aria-label="Read Aloud"
             >
               {icon} {/* Render the current icon */}
@@ -315,23 +315,23 @@ function ChatMessage({ text, type, shouldStream, mediaType, fileName, inputUserQ
             {/* Thumbs Up/Down Feedback */}
             <button
               onClick={() => handleFeedback('up')}
-              className={`p-2 rounded-full ${feedback === 'up' ? 'bg-green-400' : 'bg-gray-300'} hover:bg-green-500 flex items-center justify-center`}
+              className={`p-2 rounded-full ${feedback === 'up' ? 'bg-green-700' : 'bg-gray-300'} hover:bg-green-500 hover:-rotate-45 hover:scale-125 transition-transform duration-200 flex items-center justify-center`}
               aria-label="Thumbs Up"
             >
               {feedback === 'up' ? <HandThumbUpSolid className="w-6 h-6 text-white" /> : <HandThumbUpOutline className="w-6 h-6 text-gray-700" />}
             </button>
             <button
               onClick={() => handleFeedback('down')}
-              className={`p-2 rounded-full ${feedback === 'down' ? 'bg-red-400' : 'bg-gray-300'} hover:bg-red-500 flex items-center justify-center`}
+              className={`p-2 rounded-full ${feedback === 'down' ? 'bg-red-800' : 'bg-gray-300'} hover:bg-red-500 hover:-rotate-45 hover:scale-125 transition-transform duration-200 flex items-center justify-center`}
               aria-label="Thumbs Down"
             >
               {feedback === 'down' ? <HandThumbDownSolid className="w-6 h-6 text-white" /> : <HandThumbDownOutline className="w-6 h-6 text-gray-700" />}
             </button>
           </div>
           {showFeedbackPopup && (
-            <div className="mt-2 p-2 bg-gray-100 rounded-lg shadow-lg">
+            <div className="mt-2 p-2 bg-custombg2 rounded-lg shadow-lg">
               <textarea
-                className="w-full p-2 border rounded-md"
+                className="w-full p-2 border rounded-md bg-custombg"
                 rows="3"
                 value={feedbackText}
                 onChange={(e) => setFeedbackText(e.target.value)}
@@ -339,7 +339,8 @@ function ChatMessage({ text, type, shouldStream, mediaType, fileName, inputUserQ
               ></textarea>
               <button
                 onClick={handleFeedbackSubmit}
-                className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+                style={{ backgroundColor: "#2f28909c" }}
+                className="mt-2 text-white px-4 py-2 rounded-md hover:text-customtxt hover:scale-105 transition-transform duration-200"
               >
                 Submit Feedback
               </button>

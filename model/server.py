@@ -1,16 +1,19 @@
 from fastapi import FastAPI, Request, BackgroundTasks, HTTPException, UploadFile, File, Form
 from typing import List
 from pydantic import BaseModel
+from passlib.context import CryptContext
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import shutil
+import random
+import string
 from groq import Groq
 from langchain_chroma import Chroma
 from fastapi.responses import StreamingResponse, JSONResponse
 from gtts import gTTS
 import io
 import aiofiles
-from datetime import datetime
+from datetime import datetime, date
 
 from app import run_model
 from FileProcess import process_file
@@ -18,7 +21,7 @@ from ProcessFeedback import review_feedback
 from whatsapp import whatsapp
 from ChatStoreSQL import (update_personalization_params, get_personalization_params, get_past_chats, get_chat_ids, 
                         load_chat_history, store_feedback, get_existing_feedback, delete_chat, get_mentor_notes, 
-                        insert_mentor_notes, get_mentor_queries, respond_to_query, delete_mentor_query_by_id)
+                        insert_mentor_notes, get_mentor_queries, respond_to_query, delete_mentor_query_by_id, get_user, create_user)
 from MultimodalRAG import (transcribe_audio_files, process_all_pdfs, generate_captions_for_images, 
                             create_documents_from_captions, process_videos_in_directory, 
                             text_preprocess, update_metadata, save_doc)
@@ -30,6 +33,8 @@ client = Groq(api_key=os.getenv('GROQ_API_KEY'))
 # Cache for preloading variables
 preloaded_data = {}
 
+# Password hashing setup using bcrypt
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Directory to store files relevant to the knowledge base
 UPLOAD_DIRECTORY = "uploads"
@@ -74,6 +79,15 @@ class QueryResponse(BaseModel):
     mentorResponse: str
     mentorId: str
 
+class User(BaseModel):
+    email: str
+    password: str
+    dateOfBirth: str
+
+class LoginModel(BaseModel):
+    email: str
+    password: str
+
 app = FastAPI()
 
 # Allowing Cross Origin Resource Sharing
@@ -103,6 +117,32 @@ async def remove_file(file):
     except OSError as e:
         return JSONResponse(content={"error": f"Error removing file: {e}"}, status_code=500)
 
+# Helper function to hash passwords
+def hash_password(password: str):
+    return pwd_context.hash(password)
+
+# Helper function to verify hashed passwords
+def verify_password(plain_password: str, hashed_password: str):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def verify_login(email: str, password: str):
+    user_data = get_user(email)
+
+    if not user_data:
+        return {"success": False, "message": "Invalid email or password"}
+
+    if not verify_password(password, user_data[0]):
+        return {"success": False, "message": "Invalid email or password"}
+
+    return {"success": True, "message": "Login successful"}
+
+# Function to generate random ChatID
+def generate_random_string(length, past_chats):
+    charset = string.ascii_letters + string.digits
+    while True:
+        random_string = ''.join(random.choices(charset, k=length))
+        if not any(chat == random_string for chat in past_chats):
+            return random_string
 
 # Helper function to preload chat-specific data
 async def preload_chat_data(ChatID):
@@ -189,8 +229,9 @@ async def fetch_resources(request: ResourceRequest):
 
 
 @app.post("/update-personalization")
-async def update_personalization(data: PersonalizationData, background_tasks: BackgroundTasks = BackgroundTasks()):
+async def update_personalization(data: PersonalizationData):
     try:
+        print(data)
         update_personalization_params(
             data.ChatID, 
             data.UserID, 
@@ -261,7 +302,7 @@ async def get_transcription(file: UploadFile = File(...)):
         # Send the audio file for transcription
         transcription = client.audio.transcriptions.create(
             file=(file.filename, file.file),  # Use the audio file from the request
-            model="distil-whisper-large-v3-en",  # The required transcription model
+            model="whisper-large-v3-turbo",  # The required transcription model
             prompt="Specify context or spelling",  # Optional prompt to guide transcription
             response_format="json",  # Get response in JSON format
             language="en",  # Specify language
@@ -640,6 +681,31 @@ async def delete_mentor_query(queryId: str):
         return {"message": "Query deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# Endpoint for registration
+@app.post("/register")
+async def register(user: User):
+    print(user)
+    user_data = get_user(user.email)
+    
+    if user_data:
+        raise HTTPException(status_code=400, detail="User already exists")
+
+    hashed_pwd = hash_password(user.password)
+    create_user(user.email, hashed_pwd, user.dateOfBirth)
+    all_chatid = get_chat_ids()
+    chat_id = generate_random_string(10, all_chatid)
+    update_personalization_params(chat_id, user.email, "", "Verbal", "Textbook", "Neutral", "Deductive")
+
+    return {"success": True, "message": "User registered successfully"}
+
+
+# Endpoint for login
+@app.post("/login")
+async def login(login: LoginModel):
+    result = verify_login(login.email, login.password)
+    return result
 
 if __name__ == "__main__":
     import uvicorn

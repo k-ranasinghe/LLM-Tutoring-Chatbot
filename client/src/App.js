@@ -1,26 +1,35 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { ThemeProvider } from '@mui/material/styles';
+import { Box } from '@mui/material';
+import theme from './components/theme.js';
 import ManageFiles from "./pages/ManageFiles.tsx";
 import UploadFiles from "./pages/UploadFiles.tsx";
 import MentorNotes from "./pages/MentorNotes.tsx";
 import MentorQueries from "./pages/MentorQueries.tsx";
 import ChatPage from "./pages/ChatPage";
-import SignupPage from "./pages/SignupPage";
+import LoginPage from "./pages/LoginPage";
+import SignUpPage from "./pages/SignUpPage";
 
 function App() {
   return (
+    <ThemeProvider theme={theme}>
       <Router>
-        <div className="container">
+        <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
           <Routes>
-            <Route exact path="/" element={<ChatPage />} />
-            <Route path="/sign-up" element={<SignupPage />} />
+            <Route path="/" element={<Navigate to="/login" replace />} />
+
+            <Route path="/chat" element={<ChatPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/sign-up" element={<SignUpPage />} />
             
             <Route path="/upload" element={<UploadFiles />} /> 
             <Route path="/manage" element={<ManageFiles />} /> 
             <Route path="/notes" element={<MentorNotes />} /> 
             <Route path="/queries" element={<MentorQueries />} /> 
           </Routes>
-        </div>
+        </Box>
       </Router>
+    </ThemeProvider>
   );
 }
 

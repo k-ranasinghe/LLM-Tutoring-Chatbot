@@ -21,7 +21,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SchoolIcon from '@mui/icons-material/School';
 import ManageHistoryIcon from '@mui/icons-material/ManageHistory';
-import { useNavigate } from 'react-router-dom';  // Import useNavigate for routing
+import { useNavigate, Link } from 'react-router-dom';  // Import useNavigate for routing
 
 const drawerWidth = 240;
 
@@ -79,7 +79,7 @@ const AppBar = styled(MuiAppBar, {
 const Drawer = styled(MuiDrawer, { shouldForwardProp: (prop) => prop !== 'open' })(
   ({ theme, open }) => ({
     width: drawerWidth,
-    flexShrink: 0, 
+    flexShrink: 0,
     whiteSpace: 'nowrap',
     boxSizing: 'border-box',
     ...(open && {
@@ -112,7 +112,7 @@ export default function SideBar() {
     { text: 'Manage Uploads', icon: <ManageHistoryIcon />, path: '/manage' },
     { text: 'Mentor Notes', icon: <SchoolIcon />, path: '/notes' },
     { text: 'Mentor Queries', icon: <PeopleIcon />, path: '/queries' },
-    { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
+    { text: 'Settings', icon: <SettingsIcon />, path: '' },
   ];
 
   return (
@@ -128,13 +128,32 @@ export default function SideBar() {
             sx={{
               marginRight: 5,
               ...(open && { display: 'none' }),
+              color: '#b4b4b4',
             }}
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div">
+          <Typography variant="h6" noWrap component="div" sx={{ color: '#b4b4b4' }}>
             Admin Panel
           </Typography>
+          <Box sx={{ flexGrow: 1 }}></Box>
+          <Link to="/chat">
+            <ListItem
+              button
+              sx={{
+                color: '#2f2f2f',
+                backgroundColor: '#b4b4b4',
+                borderRadius: '20px',
+                '&:hover': {
+                  backgroundColor: '#a3a3a3', // Change color on hover
+                  transform: 'scale(1.1)', // Scale effect
+                  transition: 'transform 200ms', // Transition duration
+                },
+              }}
+            >
+              <ListItemText primary="Chat Page" />
+            </ListItem>
+          </Link>
         </Toolbar>
       </AppBar>
       <Drawer variant="permanent" open={open}>
@@ -146,7 +165,7 @@ export default function SideBar() {
         <Divider />
         <List>
           {menuItems.map((item, index) => (
-            <ListItem key={item.text} disablePadding sx={{ display: 'block' }}>
+            <ListItem key={item.text} disablePadding sx={{ display: 'block', color: '#b4b4b4' }}>
               <ListItemButton
                 onClick={() => navigate(item.path)}  // Navigate to the specified path
                 sx={{
@@ -160,6 +179,7 @@ export default function SideBar() {
                     minWidth: 0,
                     mr: open ? 3 : 'auto',
                     justifyContent: 'center',
+                    color: '#b4b4b4',
                   }}
                 >
                   {item.icon}

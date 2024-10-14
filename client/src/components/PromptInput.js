@@ -138,7 +138,7 @@ function PromptInput({ onSendMessage, isLoading }) {
   };
 
   return (
-    <div className="bg-white p-4 shadow-md flex flex-col font-sans">
+    <div style={{ backgroundColor: '#2f2f2f45' }} className="p-2 shadow-md flex flex-col font-sans rounded-full">
       {/* Show file name and icon when a file is attached */}
       {selectedFile && (
         <div className="flex items-center mb-2">
@@ -146,7 +146,7 @@ function PromptInput({ onSendMessage, isLoading }) {
           <span className="ml-2 text-gray-700">{selectedFile.name}</span>
         </div>
       )}
-      <div className="bg-white p-4 shadow-md flex items-center border-t border-gray-300 font-sans">
+      <div style={{ backgroundColor: '#2f2f2f' }} className=" p-4 shadow-md flex items-center font-sans rounded-full">
         <button
           onClick={toggleRecording}
           className="mr-2 text-gray-600 hover:text-gray-900"
@@ -155,11 +155,11 @@ function PromptInput({ onSendMessage, isLoading }) {
           {isRecording ? (
             <StopIcon className="h-6 w-6 text-red-600 transform hover:scale-125 transition-transform duration-200" /> // Stop icon during recording
           ) : (
-            <MicrophoneIcon className="h-6 w-6 hover:text-sky-500 transform hover:scale-125 transition-transform duration-200" /> // Mic icon when not recording
+            <MicrophoneIcon className="h-6 w-6 text-gray-500 hover:text-sky-500 transform hover:scale-125 transition-transform duration-200" /> // Mic icon when not recording
           )}
         </button>
         <label className="mr-2 text-gray-600 hover:text-gray-900 cursor-pointer">
-          <PaperClipIcon className="h-6 w-6 hover:text-sky-500 transform hover:scale-125 transition-transform duration-200" />
+          <PaperClipIcon className="h-6 w-6 text-gray-500 hover:text-sky-500 transform hover:scale-125 transition-transform duration-200" />
           <input
             type="file"
             onChange={(e) => handleFileChange(e.target.files[0])}
@@ -174,16 +174,17 @@ function PromptInput({ onSendMessage, isLoading }) {
           onKeyPress={handleKeyPress}
           onPaste={handlePaste}
           placeholder="Type your prompt..."
-          className="flex-grow p-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          style={{ backgroundColor: '#2f2f2f', color: '#b4b4b4' }}
+          className="flex-grow p-2 border border-gray-500 rounded-lg focus:outline-none"
           disabled={isLoading}
         />
         <button
           onClick={handleSend}
-          className={`text-white p-2 rounded-r-lg hover:bg-blue-600 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-          style={{ backgroundColor: "#042f47" }}
+          className={`text-white ml-1 p-2 rounded-xl hover:bg-blue-600 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          style={{ backgroundColor: "#212121" }}
           disabled={isLoading}
         >
-          <PaperAirplaneIcon className="h-6 w-6 transform -rotate-45" />
+          <PaperAirplaneIcon className="h-6 w-6 text-gray-500 hover:text-sky-500 transform -rotate-45 hover:scale-125 transition-transform duration-200" />
         </button>
       </div>
     </div>

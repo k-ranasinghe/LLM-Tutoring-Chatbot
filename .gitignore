@@ -8,12 +8,14 @@ model/.env
 server/.env
 model/__pycache__
 assets/
+.scannerwork/
 admin/backend/lectures/
 admin/backend/static/
 knowledge_base/
 model/file_embeddings/
 model/uploads/
 model/google_credentials.json
+model/test_server.py
 /.pnp
 .pnp.js
 
