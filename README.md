@@ -27,7 +27,7 @@ TWILIO_AUTH_TOKEN=
 ```
 
 <br>Get the API keys for Gemini and YouTube from [here](https://console.cloud.google.com/apis/dashboard).<br><br>
-Enable Custom Search API from [here](https://console.cloud.google.com/apis/dashboard). Create a service account and get the json file containing the credentials. Paste the file inside the model directory.<br><br>
+Enable Custom Search API from [here](https://console.cloud.google.com/apis/dashboard). Create a service account and get the json file containing the credentials. Paste the file inside the model directory as `google_credentials.json`.<br><br>
 Create a Custom Search Engine from [here](https://programmablesearchengine.google.com). Get the search engine id and add it as `CSE_ID` to the `.env` file.
 
 ## Setup
