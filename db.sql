@@ -1,19 +1,15 @@
-CREATE DATABASE chatbot;
+CREATE DATABASE new_chatbot;
 
-USE chatbot;
+USE new_chatbot;
 
 CREATE TABLE User_data (
     UserID VARCHAR(50) PRIMARY KEY,
     Password VARCHAR(255),
-    Date_of_birth DATE
+    name VARCHAR(100),
+    Date_of_birth DATE,
+    phone_number VARCHAR(15),
+    isAdmin BOOLEAN DEFAULT FALSE;
 );
-
--- Sample insert
-INSERT INTO User_data (UserID, Password, Date_of_birth) VALUES
-('user123', 'password123', '2012-01-01'),
-('user456', 'password456', '2008-01-01'),
-('mentor123', 'password123', '2000-01-01'),
-('mentor456', 'password456', '2000-01-01');
 
 
 CREATE TABLE User_chats (
@@ -23,11 +19,6 @@ CREATE TABLE User_chats (
     PRIMARY KEY (UserID, ChatID),
     FOREIGN KEY (UserID) REFERENCES User_data(UserID)
 );
-
--- Sample insert
-INSERT INTO User_chats (UserID, ChatID, Timestamp) VALUES 
-('user123', 'chat123', '2024-09-06 12:30:00'),
-('user456', 'chat456', '2024-09-06 13:30:00');
 
 
 CREATE TABLE Chat_data (
@@ -47,34 +38,9 @@ CREATE TABLE Chat_info (
     Reasoning_framework ENUM('Deductive', 'Inductive', 'Abductive', 'Analogical')
 );
 
+-- Sample insert
 INSERT INTO Chat_info (ChatID, Chat_title, Student_type, Learning_style, Communication_format, Tone_style, Reasoning_framework) VALUES 
 ('chat123', 'Introduction to Python', 'type2', 'Intuitive', 'Storytelling', 'Neutral', 'Abductive');
-
-
-CREATE TABLE Mentor_notes (
-	NoteID INT AUTO_INCREMENT PRIMARY KEY,
-    MentorID VARCHAR(50) NOT NULL,
-    StudentID VARCHAR(50) NOT NULL,
-    Course VARCHAR(255),
-    Notes TEXT,
-    FOREIGN KEY (StudentID) REFERENCES User_data(UserID),
-    FOREIGN KEY (MentorID) REFERENCES User_data(UserID)
-);
-
-INSERT INTO mentor_notes (mentorid, studentid, course, notes) VALUES 
-(
-"mentor123",
-"user123", 
-'Programming', 
-'The student has demonstrated a solid understanding of timing complexities and data structures. We covered various topics including Big O notation, sorting algorithms (bubble sort, merge sort), and basic data structures (arrays, linked lists, and trees). The student has shown good progress in applying these concepts to practical problems and has completed all exercises with a high level of accuracy. However, there is room for improvement in understanding advanced data structures like graphs and hash tables. Additional focus on optimizing code for performance is recommended.'
-),
-(
-"mentor123",
-"user123", 
-'3D Design', 
-'The student has shown considerable progress in 3D design concepts. We covered a range of topics including basic modeling techniques, texture mapping, and lighting. The student has successfully created several 3D models using various tools and techniques such as extrusion, lofting, and Boolean operations. Their work demonstrates a good understanding of spatial relationships and object composition. However, there is room for improvement in applying advanced rendering techniques and optimizing models for performance. Additional practice with animation and real-time rendering engines would further enhance their skills.'
-);
-
 
 CREATE TABLE Curriculum (
     Course VARCHAR(50),
@@ -156,17 +122,32 @@ CREATE TABLE mentor_queries (
     chatbot_response TEXT NOT NULL,
     answered BOOLEAN DEFAULT FALSE,
     mentor_response TEXT,
-    mentorid VARCHAR(255)
+    mentorid VARCHAR(255),
+    viewed BOOLEAN DEFAULT FALSE
 );
+
+
+CREATE TABLE feedback_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    userid VARCHAR(255) NOT NULL,
+    user_query TEXT NOT NULL,
+    response TEXT NOT NULL,
+    feedback_type ENUM('positive', 'negative') NOT NULL,
+    feedback_text TEXT,
+    instruction TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    selected BOOLEAN DEFAULT FALSE
+);
+
 
 select * from User_data;
 select * from User_chats;
 select * from Chat_data;
 select * from Chat_info;
-select * from Mentor_notes;
 select * from Curriculum;
 select * from Personalization_instructions;
 select * from feedback;
+select * from feedback_log;
 select * from lecture_materials;
 select * from mentor_notes;
 select * from mentor_queries;
