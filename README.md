@@ -43,7 +43,7 @@ Backend Web App (port=8000)
 ```sh
 cd model
 python -m venv venv
-venv/Scripts/activate
+venv/scripts/activate
 pip install -r requirements.txt
 uvicorn server:app --reload
 ```
