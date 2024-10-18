@@ -4,7 +4,7 @@ import Header from '../components/Header';
 const LoginPage = () => {
   return (
     <div>
-      <Header navItem={null} isAdmin={false} />
+      <Header isAdmin={false} />
       <Login />
     </div>
   );

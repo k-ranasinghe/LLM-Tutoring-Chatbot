@@ -14,8 +14,10 @@ admin/backend/static/
 knowledge_base/
 model/file_embeddings/
 model/uploads/
+model/images/
 model/google_credentials.json
 model/test_server.py
+model/GraphRAG.py
 /.pnp
 .pnp.js
 

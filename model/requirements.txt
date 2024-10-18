@@ -31,6 +31,8 @@ unstructured
 uvicorn
 passlib
 
+langchain_experimental
+neo4j
 
 httpx
 pytest

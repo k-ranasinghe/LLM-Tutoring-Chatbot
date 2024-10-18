@@ -6,6 +6,8 @@ import ManageFiles from "./pages/ManageFiles.tsx";
 import UploadFiles from "./pages/UploadFiles.tsx";
 import MentorNotes from "./pages/MentorNotes.tsx";
 import MentorQueries from "./pages/MentorQueries.tsx";
+import FeedbackLogs from "./pages/FeedbackPage.tsx";
+import UserData from "./pages/UserDataPage.tsx";
 import ChatPage from "./pages/ChatPage";
 import LoginPage from "./pages/LoginPage";
 import SignUpPage from "./pages/SignUpPage";
@@ -26,6 +28,8 @@ function App() {
             <Route path="/manage" element={<ManageFiles />} /> 
             <Route path="/notes" element={<MentorNotes />} /> 
             <Route path="/queries" element={<MentorQueries />} /> 
+            <Route path="/feedback" element={<FeedbackLogs />} /> 
+            <Route path="/users" element={<UserData />} /> 
           </Routes>
         </Box>
       </Router>

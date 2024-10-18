@@ -18,10 +18,13 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
+import SpatialAudioOffIcon from '@mui/icons-material/SpatialAudioOff';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SchoolIcon from '@mui/icons-material/School';
 import ManageHistoryIcon from '@mui/icons-material/ManageHistory';
 import { useNavigate, Link } from 'react-router-dom';  // Import useNavigate for routing
+import Cookies from 'js-cookie';
 
 const drawerWidth = 240;
 
@@ -97,6 +100,13 @@ export default function SideBar() {
   const theme = useTheme();
   const navigate = useNavigate();  // Initialize useNavigate hook
   const [open, setOpen] = React.useState(false);
+  const isAdmin = Cookies.get('isAdmin') === '1';
+
+  React.useEffect(() => {
+    if (!isAdmin) {
+      navigate('/chat'); // Redirect to chat if not admin
+    }
+  }, [isAdmin, navigate]);
 
   const handleDrawerOpen = () => {
     setOpen(true);
@@ -112,6 +122,8 @@ export default function SideBar() {
     { text: 'Manage Uploads', icon: <ManageHistoryIcon />, path: '/manage' },
     { text: 'Mentor Notes', icon: <SchoolIcon />, path: '/notes' },
     { text: 'Mentor Queries', icon: <PeopleIcon />, path: '/queries' },
+    { text: 'Feedback Logs', icon: <SpatialAudioOffIcon />, path: '/feedback' },
+    { text: 'Handle Users', icon: <ManageAccountsIcon />, path: '/users' },
     { text: 'Settings', icon: <SettingsIcon />, path: '' },
   ];
 
@@ -136,7 +148,8 @@ export default function SideBar() {
           <Typography variant="h6" noWrap component="div" sx={{ color: '#b4b4b4' }}>
             Admin Panel
           </Typography>
-          <Box sx={{ flexGrow: 1 }}></Box>
+          <Box sx={{ flexGrow: 1 }} />
+          <Box sx={{ display: 'flex', gap: 2 }}>
           <Link to="/chat">
             <ListItem
               button
@@ -154,6 +167,28 @@ export default function SideBar() {
               <ListItemText primary="Chat Page" />
             </ListItem>
           </Link>
+          <Link to="/login" onClick={() => {
+            Cookies.remove('userId'); // Remove the cookie
+            Cookies.remove('isAdmin');
+            navigate('/login'); // Navigate to the login page
+          }}>
+            <ListItem
+              button
+              sx={{
+                color: '#2f2f2f',
+                backgroundColor: '#b4b4b4',
+                borderRadius: '20px',
+                '&:hover': {
+                  backgroundColor: '#a3a3a3', // Change color on hover
+                  transform: 'scale(1.1)', // Scale effect
+                  transition: 'transform 200ms', // Transition duration
+                },
+              }}
+            >
+              <ListItemText primary="Sign Out" />
+            </ListItem>
+          </Link>
+          </Box>
         </Toolbar>
       </AppBar>
       <Drawer variant="permanent" open={open}>

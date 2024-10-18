@@ -82,7 +82,7 @@ const ManageFiles: React.FC = () => {
               }
             `}
         </style>
-        <Container>
+        <Container sx={{ marginTop: "10vh" }}>
           <Typography variant="h4" gutterBottom>
             Manage Files
           </Typography>
@@ -90,6 +90,7 @@ const ManageFiles: React.FC = () => {
             <TextField
               label="Search"
               variant="outlined"
+              sx={{ marginBottom: "5vh", marginTop: "3vh" }}
               value={searchQuery}
               onChange={handleSearchChange}
               fullWidth

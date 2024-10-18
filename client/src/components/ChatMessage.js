@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
-import { SpeakerWaveIcon, PauseIcon, PlayIcon, DocumentIcon, PhotoIcon, VideoCameraIcon, MusicalNoteIcon, MicrophoneIcon } from '@heroicons/react/24/solid';
+import { SpeakerWaveIcon, PauseIcon, PlayIcon, DocumentIcon, PhotoIcon, VideoCameraIcon, MusicalNoteIcon, MicrophoneIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/solid';
 import { HandThumbUpIcon as HandThumbUpOutline, HandThumbDownIcon as HandThumbDownOutline } from '@heroicons/react/24/outline'; // Outline Icons
 import { HandThumbUpIcon as HandThumbUpSolid, HandThumbDownIcon as HandThumbDownSolid } from '@heroicons/react/24/solid'; // Solid Icons
 import LoadingAnimation from './LoadingAnimation';
@@ -20,15 +20,34 @@ function ChatMessage({ text, type, shouldStream, mediaType, fileName, inputUserQ
   const [showFeedbackPopup, setShowFeedbackPopup] = useState(false); // New state for showing feedback popup
   const [feedbackText, setFeedbackText] = useState(''); // New state to capture feedback text
   const audioRef = useRef(null); // Reference to audio object
-  const [recommendedResources, setRecommendedResources] = useState([]);
+  const [recommendedResources, setRecommendedResources] = useState({});
+  const [imageUrls, setImageUrls] = useState([]);
+  const [resourcesOpen, setResourcesOpen] = useState(false);
+  const [relatedWorkOpen, setRelatedWorkOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   // Split the message into main content and resources
   const mainContent = Array.isArray(text) ? text[0] : text;
   const resources = Array.isArray(text) && text.length > 1 ? text.slice(1)[0] : [];
+  
   useEffect(() => {
     const resources = Array.isArray(text) && text.length > 1 ? text.slice(1) : [];
+    
+    if (resources.length > 0) {
+      const files = text.slice(2)[0];
+      setImageUrls(files);
+    }
     setRecommendedResources(resources);
   }, [text]);
+
+
+  const handleImageClick = (url) => {
+    setSelectedImage(url);
+  };
+
+  const closeImagePopup = () => {
+    setSelectedImage(null);
+  };
 
   // Helper function to generate a random delay within a range (min, max)
   // This will be used to simulate the streaming/generative effect of ChatGPT
@@ -86,25 +105,25 @@ function ChatMessage({ text, type, shouldStream, mediaType, fileName, inputUserQ
 
 
   const fetchRecommendedResources = async () => {
-      try {
-            const response = await fetch('http://localhost:8000/fetch-resources', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    input_text: userQuery, // Use the current user query
-                    response: mainContent, // Use the main response that was streamed
-                    chatId: chatId,
-                }),
-            });
+    try {
+      const response = await fetch('http://localhost:8000/fetch-resources', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          input_text: userQuery, // Use the current user query
+          response: mainContent, // Use the main response that was streamed
+          chatId: chatId,
+        }),
+      });
 
-            const data = await response.json();
-            console.log('Recommended resources:', data);
-            setRecommendedResources(data); // Update state with new resources
-      } catch (error) {
-            console.error('Error fetching resources:', error);
-      }
+      const data = await response.json();
+      console.log('Recommended resources:', data);
+      setRecommendedResources(data); // Update state with new resources
+    } catch (error) {
+      console.error('Error fetching resources:', error);
+    }
   };
 
 
@@ -232,9 +251,9 @@ function ChatMessage({ text, type, shouldStream, mediaType, fileName, inputUserQ
     setFeedbackText(''); // Reset feedback text
   };
 
-  const renderRecommendedResources = (resources) => {
+  const renderRecommendedResources = (resources = {}) => {
     const { 'YouTube Videos': youtubeVideos = [], 'Web Articles': webArticles = [] } = resources;
-  
+
     return (
       <div className="-mt-4 p-4">
         {youtubeVideos.length > 0 && (
@@ -288,21 +307,77 @@ function ChatMessage({ text, type, shouldStream, mediaType, fileName, inputUserQ
           {getMediaIcon(mediaType, fileName)}
         </div>
       )}
-      <ReactMarkdown 
-      className="whitespace-pre-wrap" 
-      components={{ 
-        // Add any custom components here if needed
-      }}
-    >
-      {shouldStream ? displayedText : mainContent}
-    </ReactMarkdown>
+      <ReactMarkdown
+        className="whitespace-pre-wrap"
+        components={{
+          // Add any custom components here if needed
+        }}
+      >
+        {shouldStream ? displayedText : mainContent}
+      </ReactMarkdown>
       {/* Only show recommended resources once the streaming is complete */}
       {isStreamingComplete && typeof resources === 'object' && Object.keys(resources).length > 0 && (
         <div className="mt-4">
-          <p className="text-xl font-semibold mb-2">Recommended Resources</p>
-          <ul className="list-disc pl-5">
-            {renderRecommendedResources(recommendedResources[0])}
-          </ul>
+          <p className="text-xl font-semibold mb-2 flex items-center">
+            <span className="mr-2">Recommended Resources</span>
+            <button
+              onClick={() => setResourcesOpen(prev => !prev)}
+              className="focus:outline-none"
+              aria-label={resourcesOpen ? "Minimize resources" : "Expand resources"}
+            >
+              {resourcesOpen ? <ChevronUpIcon className="h-6 w-6" /> : <ChevronDownIcon className="h-6 w-6" />}
+            </button>
+          </p>
+          {resourcesOpen && (
+            <ul className="list-disc pl-5">
+              {renderRecommendedResources(recommendedResources[0])}
+            </ul>
+          )}
+          {isStreamingComplete && Array.isArray(imageUrls) && imageUrls.length > 0 && (
+            <div className="mt-4">
+              <p className="text-xl font-semibold mb-2 flex items-center">
+                <span className="mr-2">Related Work</span>
+                <button onClick={() => setRelatedWorkOpen(prev => !prev)} className="focus:outline-none">
+                  {relatedWorkOpen ? <ChevronUpIcon className="h-6 w-6" /> : <ChevronDownIcon className="h-6 w-6" />}
+                </button>
+              </p>
+              {relatedWorkOpen && (
+                <div className="overflow-x-auto flex mb-2">
+                  <style>
+                    {`
+                      ::-webkit-scrollbar {
+                        width: 20px; /* Width of the scrollbar */
+                        background: transparent; /* Transparent background */
+                      }
+                      ::-webkit-scrollbar-thumb {
+                        background-color: rgba(90, 90, 90, 0.8); /* Lighter thumb color */
+                        border-left: 0px solid #212121;
+                        border-right: 0px solid #212121;
+                      }
+                      ::-webkit-scrollbar-thumb:hover {
+                        background: rgba(90, 90, 90, 1); /* Darker thumb on hover */
+                      }
+                    `}
+                  </style>
+                  {imageUrls.map((url, index) => (
+                    <div key={index} className="flex-shrink-0 p-2">
+                      <img
+                        src={url}
+                        alt={`Related work ${index + 1}`}
+                        className="rounded-lg shadow-md w-48 h-auto cursor-pointer" // Adjust width as needed
+                        onClick={() => handleImageClick(url)} // Handle click on the image
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+              {selectedImage && (
+                <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-75" onClick={closeImagePopup}>
+                  <img src={selectedImage} alt="Selected" className="max-w-3xl max-h-3/4 rounded-lg" />
+                </div>
+              )}
+            </div>
+          )}
           <div className="flex space-x-4">
             <button
               onClick={handleSpeak}
@@ -344,6 +419,11 @@ function ChatMessage({ text, type, shouldStream, mediaType, fileName, inputUserQ
               >
                 Submit Feedback
               </button>
+            </div>
+          )}
+          {selectedImage && (
+            <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50" onClick={closeImagePopup}>
+              <img src={selectedImage} alt="Selected" className="max-w-[80%] max-h-[80%] rounded-lg" />
             </div>
           )}
         </div>

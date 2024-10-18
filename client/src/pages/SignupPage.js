@@ -9,6 +9,8 @@ export default function SignUpPage() {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [dateOfBirth, setDateOfBirth] = useState('');
+    const [name, setName] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
     const [isPasswordMatch, setIsPasswordMatch] = useState(true);
     const [buttonColor, setButtonColor] = useState("#4038be99");
     const navigate = useNavigate();
@@ -22,7 +24,7 @@ export default function SignUpPage() {
         }
         const formattedDateOfBirth = dateOfBirth ? dateOfBirth.toISOString().split('T')[0] : '';
 
-        const formData = { email, password, dateOfBirth: formattedDateOfBirth };
+        const formData = { email, password, dateOfBirth: formattedDateOfBirth, name, phoneNumber };
 
         try {
             const response = await fetch('http://127.0.0.1:8000/register', {
@@ -47,21 +49,54 @@ export default function SignUpPage() {
     return (
         <>
         <div className="flex flex-col h-screen">
-            <Header navItem={null} isAdmin={false} className="h-16" />
+            <Header isAdmin={false} className="h-16" />
             <div className="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8 -mt-20">
                 <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-                    <h2 className="mt-10 text-center text-3xl font-bold leading-9 tracking-tight text-customtxt">
-                        Create an Account
+                    <h2 className="mt-10 text-center text-5xl font-bold leading-9 tracking-tight text-customtxt">
+                        Create Account
                     </h2>
                 </div>
 
-                <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
+                <div className="mt-4 sm:mx-auto sm:w-full sm:max-w-sm">
                     <form className="space-y-6" onSubmit={handleSubmit}>
+                    <div>
+                            <label htmlFor="name" className="block text-sm font-medium leading-6 text-customtxt">
+                                Name
+                            </label>
+                            <div>
+                                <input
+                                    id="name"
+                                    name="name"
+                                    type="text"
+                                    required
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    className="block w-full h-8 rounded-md py-1.5 px-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label htmlFor="phoneNumber" className="block text-sm font-medium leading-6 text-customtxt">
+                                Phone Number
+                            </label>
+                            <div>
+                                <input
+                                    id="phoneNumber"
+                                    name="phoneNumber"
+                                    type="tel"
+                                    required
+                                    value={phoneNumber}
+                                    onChange={(e) => setPhoneNumber(e.target.value)}
+                                    className="block w-full h-8 rounded-md py-1.5 px-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                />
+                            </div>
+                        </div>
                         <div>
                             <label htmlFor="email" className="block text-sm font-medium leading-6 text-customtxt">
                                 Email Address
                             </label>
-                            <div className="mt-2">
+                            <div>
                                 <input
                                     id="email"
                                     name="email"
@@ -70,7 +105,7 @@ export default function SignUpPage() {
                                     required
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="block w-full rounded-md py-1.5 px-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                    className="block w-full h-8 rounded-md py-1.5 px-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6"
                                 />
                             </div>
                         </div>
@@ -79,7 +114,7 @@ export default function SignUpPage() {
                             <label htmlFor="password" className="block text-sm font-medium leading-6 text-customtxt">
                                 Password
                             </label>
-                            <div className="mt-2">
+                            <div>
                                 <input
                                     id="password"
                                     name="password"
@@ -87,7 +122,7 @@ export default function SignUpPage() {
                                     required
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="block w-full rounded-md py-1.5 px-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                    className="block w-full h-8 rounded-md py-1.5 px-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6"
                                 />
                             </div>
                         </div>
@@ -96,7 +131,7 @@ export default function SignUpPage() {
                             <label htmlFor="confirmPassword" className="block text-sm font-medium leading-6 text-customtxt">
                                 Confirm Password
                             </label>
-                            <div className="mt-2">
+                            <div>
                                 <input
                                     id="confirmPassword"
                                     name="confirmPassword"
@@ -104,7 +139,7 @@ export default function SignUpPage() {
                                     required
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
-                                    className="block w-full rounded-md py-1.5 px-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                    className="block w-full h-8 rounded-md py-1.5 px-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6"
                                 />
                             </div>
                             {!isPasswordMatch && (
@@ -116,11 +151,11 @@ export default function SignUpPage() {
                             <label htmlFor="dateOfBirth" className="block text-sm font-medium leading-6 text-customtxt">
                                 Date of Birth
                             </label>
-                            <div className="mt-2">
+                            <div>
                                 <DatePicker
                                     selected={dateOfBirth}
                                     onChange={(date) => setDateOfBirth(date)}
-                                    className="block w-full rounded-md py-1.5 px-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                                    className="block w-full h-8 rounded-md py-1.5 px-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-indigo-600 sm:text-sm sm:leading-6"
                                     dateFormat="yyyy-MM-dd"
                                     placeholderText="Select a date"
                                     required

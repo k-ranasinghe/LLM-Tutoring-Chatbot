@@ -28,7 +28,13 @@ export default function Login() {
       } else {
         // Redirect to home on successful login
         Cookies.set('userId', email, { expires: 7 });
-        navigate("/chat");
+        Cookies.set('isAdmin', result.isAdmin, { expires: 7 });
+        Cookies.set('showDisclaimer', 'true', result.isAdmin, { expires: 7 });
+        if (result.isAdmin) {
+          navigate("/upload"); // Redirect to /upload if user is an admin
+        } else {
+          navigate("/chat", { state: { fromLogin: true } }); // Redirect to /chat if user is not an admin
+        }
       }
     } catch (error) {
       console.error("Login error", error);

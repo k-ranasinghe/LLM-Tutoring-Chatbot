@@ -18,13 +18,17 @@ def review_feedback(userQuery, response, feedback, feedbackText, existing_feedba
         ("human", """
         **User Query:** {userQuery}
         **Chatbot Response:** {response}
-        For the above user query and AI response, the user has provide the following feedback; 
         **Rating:** {feedback}
         **Feedback text:** {feedbackText}
-        Based on this information, review the AI response using the provided feedback.
-        Given below is the previously provided feedback by the user:
-        {existing_feedback}
-        Generate a response in the format of an instruction to be provided to the model to learn from the user feedback.
+        **Previous feedback:** {existing_feedback}
+        
+        Analyze the provided user query, chatbot response, and feedback. 
+        If feedback text is empty, evaluate the response quality based on the query and response content. 
+        Generate a concise instruction (under 100 words) for the model to improve based on this feedback. 
+        Consider both current and previous feedback for a comprehensive learning approach.
+        Append the new feedback to the existing feedback and analyze step by step and provide one instruction capturing everything.
+        Focus solely on the instruction without additional commentary. Output only the instruction without any additional text.
+        The output must be under 100 words.
         """)
     ])
     chain = LLMChain(llm=model, prompt=prompt)

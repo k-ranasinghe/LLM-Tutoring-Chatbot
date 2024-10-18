@@ -7,20 +7,16 @@ def get_examples():
         """```json
 {{
     "query": "bubble sort algorithm implementation and efficiency",
-    "filter": "and(eq(\\"course\\", \\"Programming\\"), eq(\\"subject\\", \\"Programming\\"))"
+    "filter": "and(eq(\\"subject\\", \\"Programming\\"))"
 }}```""",
         "data_source":
         '''```json
 {{
     "content": "Brief description of educational content",
     "attributes": {{
-        "course": {{
-            "type": "string",
-            "description": "The course relevant to the document. You must pick one of \\"Programming\\", \\"3D Design\\" or \\"Other\\"."
-        }},
         "subject": {{
             "type": "string",
-            "description": "The subject relevant to the document. One of \\"Programming\\", \\"Electronics\\", \\"3D Design\\", \\"Manufacturing\\" or \\"Other\\"."
+            "description": "The subject relevant to the document. One of \\"Programming\\", \\"Electronics\\", \\"Embedded Systems\\", \\"3D Design\\", \\"Manufacturing\\", \\"Miscellaneous\\" or \\"Other\\"."
         }}
     }}
 }}```''',
@@ -32,20 +28,16 @@ def get_examples():
         """```json
 {{
     "query": "3D modeling techniques and software",
-    "filter": "and(eq(\\"course\\", \\"3D Design\\"), eq(\\"subject\\", \\"3D Design\\"))"
+    "filter": "and(eq(\\"subject\\", \\"3D Design\\"))"
 }}```""",
         "data_source":
         '''```json
 {{
     "content": "Brief description of educational content",
     "attributes": {{
-        "course": {{
-            "type": "string",
-            "description": "The course relevant to the document. You must pick one of \\"Programming\\", \\"3D Design\\" or \\"Other\\"."
-        }},
         "subject": {{
             "type": "string",
-            "description": "The subject relevant to the document. One of \\"Programming\\", \\"Electronics\\", \\"3D Design\\", \\"Manufacturing\\" or \\"Other\\"."
+            "description": "The subject relevant to the document. One of \\"Programming\\", \\"Electronics\\", \\"Embedded Systems\\", \\"3D Design\\", \\"Manufacturing\\", \\"Miscellaneous\\" or \\"Other\\"."
         }}
     }}
 }}```''',
@@ -57,20 +49,16 @@ def get_examples():
         """```json
 {{
     "query": "microcontroller architecture and programming",
-    "filter": "and(eq(\\"course\\", \\"Programming\\"), eq(\\"subject\\", \\"Electronics\\"))"
+    "filter": "and(eq(\\"subject\\", \\"Electronics\\"))"
 }}```""",
         "data_source":
         '''```json
 {{
     "content": "Brief description of educational content",
     "attributes": {{
-        "course": {{
-            "type": "string",
-            "description": "The course relevant to the document. You must pick one of \\"Programming\\", \\"3D Design\\" or \\"Other\\"."
-        }},
         "subject": {{
             "type": "string",
-            "description": "The subject relevant to the document. One of \\"Programming\\", \\"Electronics\\", \\"3D Design\\", \\"Manufacturing\\" or \\"Other\\"."
+            "description": "The subject relevant to the document. One of \\"Programming\\", \\"Electronics\\", \\"Embedded Systems\\", \\"3D Design\\", \\"Manufacturing\\", \\"Miscellaneous\\" or \\"Other\\"."
         }}
     }}
 }}```''',
@@ -82,20 +70,16 @@ def get_examples():
         """```json
 {{
     "query": "injection molding process and materials",
-    "filter": "and(eq(\\"course\\", \\"3D Design\\"), eq(\\"subject\\", \\"Manufacturing\\"))"
+    "filter": "and(eq(\\"subject\\", \\"Manufacturing\\"))"
 }}```""",
         "data_source":
         '''```json
 {{
     "content": "Brief description of educational content",
     "attributes": {{
-        "course": {{
-            "type": "string",
-            "description": "The course relevant to the document. You must pick one of \\"Programming\\", \\"3D Design\\" or \\"Other\\"."
-        }},
         "subject": {{
             "type": "string",
-            "description": "The subject relevant to the document. One of \\"Programming\\", \\"Electronics\\", \\"3D Design\\", \\"Manufacturing\\" or \\"Other\\"."
+            "description": "The subject relevant to the document. One of \\"Programming\\", \\"Electronics\\", \\"Embedded Systems\\", \\"3D Design\\", \\"Manufacturing\\", \\"Miscellaneous\\" or \\"Other\\"."
         }}
     }}
 }}```''',
@@ -107,20 +91,16 @@ def get_examples():
         """```json
 {{
     "query": "object-oriented programming principles and examples",
-    "filter": "and(eq(\\"course\\", \\"Programming\\"), eq(\\"subject\\", \\"Programming\\"))"
+    "filter": "and(eq(\\"subject\\", \\"Programming\\"))"
 }}```""",
         "data_source":
         '''```json
 {{
     "content": "Brief description of educational content",
     "attributes": {{
-        "course": {{
-            "type": "string",
-            "description": "The course relevant to the document. You must pick one of \\"Programming\\", \\"3D Design\\" or \\"Other\\"."
-        }},
         "subject": {{
             "type": "string",
-            "description": "The subject relevant to the document. One of \\"Programming\\", \\"Electronics\\", \\"3D Design\\", \\"Manufacturing\\" or \\"Other\\"."
+            "description": "The subject relevant to the document. One of \\"Programming\\", \\"Electronics\\", \\"Embedded Systems\\", \\"3D Design\\", \\"Manufacturing\\", \\"Miscellaneous\\" or \\"Other\\"."
         }}
     }}
 }}```''',
@@ -132,20 +112,16 @@ def get_examples():
         """```json
 {{
     "query": "3D printing technologies and processes",
-    "filter": "and(eq(\\"course\\", \\"3D Design\\"), eq(\\"subject\\", \\"Manufacturing\\"))"
+    "filter": "and(eq(\\"subject\\", \\"Manufacturing\\"))"
 }}```""",
         "data_source":
         '''```json
 {{
     "content": "Brief description of educational content",
     "attributes": {{
-        "course": {{
-            "type": "string",
-            "description": "The course relevant to the document. You must pick one of \\"Programming\\", \\"3D Design\\" or \\"Other\\"."
-        }},
         "subject": {{
             "type": "string",
-            "description": "The subject relevant to the document. One of \\"Programming\\", \\"Electronics\\", \\"3D Design\\", \\"Manufacturing\\" or \\"Other\\"."
+            "description": "The subject relevant to the document. One of \\"Programming\\", \\"Electronics\\", \\"Embedded Systems\\", \\"3D Design\\", \\"Manufacturing\\", \\"Miscellaneous\\" or \\"Other\\"."
         }}
     }}
 }}```''',
@@ -157,20 +133,16 @@ def get_examples():
         """```json
 {{
     "query": "electronic circuit design principles and components",
-    "filter": "and(eq(\\"course\\", \\"Programming\\"), eq(\\"subject\\", \\"Electronics\\"))"
+    "filter": "and(eq(\\"subject\\", \\"Electronics\\"))"
 }}```""",
         "data_source":
         '''```json
 {{
     "content": "Brief description of educational content",
     "attributes": {{
-        "course": {{
-            "type": "string",
-            "description": "The course relevant to the document. You must pick one of \\"Programming\\", \\"3D Design\\" or \\"Other\\"."
-        }},
         "subject": {{
             "type": "string",
-            "description": "The subject relevant to the document. One of \\"Programming\\", \\"Electronics\\", \\"3D Design\\", \\"Manufacturing\\" or \\"Other\\"."
+            "description": "The subject relevant to the document. One of \\"Programming\\", \\"Electronics\\", \\"Embedded Systems\\", \\"3D Design\\", \\"Manufacturing\\", \\"Miscellaneous\\" or \\"Other\\"."
         }}
     }}
 }}```''',
@@ -182,20 +154,16 @@ def get_examples():
         """```json
 {{
     "query": "recursion in programming with examples and applications",
-    "filter": "and(eq(\\"course\\", \\"Programming\\"), eq(\\"subject\\", \\"Programming\\"))"
+    "filter": "and(eq(\\"subject\\", \\"Programming\\"))"
 }}```""",
         "data_source":
         '''```json
 {{
     "content": "Brief description of educational content",
     "attributes": {{
-        "course": {{
-            "type": "string",
-            "description": "The course relevant to the document. You must pick one of \\"Programming\\", \\"3D Design\\" or \\"Other\\"."
-        }},
         "subject": {{
             "type": "string",
-            "description": "The subject relevant to the document. One of \\"Programming\\", \\"Electronics\\", \\"3D Design\\", \\"Manufacturing\\" or \\"Other\\"."
+            "description": "The subject relevant to the document. One of \\"Programming\\", \\"Electronics\\", \\"Embedded Systems\\", \\"3D Design\\", \\"Manufacturing\\", \\"Miscellaneous\\" or \\"Other\\"."
         }}
     }}
 }}```''',
@@ -207,20 +175,16 @@ def get_examples():
         """```json
 {{
     "query": "parametric modeling concepts and software tools",
-    "filter": "and(eq(\\"course\\", \\"3D Design\\"), eq(\\"subject\\", \\"3D Design\\"))"
+    "filter": "and(eq(\\"subject\\", \\"3D Design\\"))"
 }}```""",
         "data_source":
         '''```json
 {{
     "content": "Brief description of educational content",
     "attributes": {{
-        "course": {{
-            "type": "string",
-            "description": "The course relevant to the document. You must pick one of \\"Programming\\", \\"3D Design\\" or \\"Other\\"."
-        }},
         "subject": {{
             "type": "string",
-            "description": "The subject relevant to the document. One of \\"Programming\\", \\"Electronics\\", \\"3D Design\\", \\"Manufacturing\\" or \\"Other\\"."
+            "description": "The subject relevant to the document. One of \\"Programming\\", \\"Electronics\\", \\"Embedded Systems\\", \\"3D Design\\", \\"Manufacturing\\", \\"Miscellaneous\\" or \\"Other\\"."
         }}
     }}
 }}```''',
@@ -232,20 +196,16 @@ def get_examples():
         """```json
 {{
     "query": "CNC machining process and programming",
-    "filter": "and(eq(\\"course\\", \\"3D Design\\"), eq(\\"subject\\", \\"Manufacturing\\"))"
+    "filter": "and(eq(\\"subject\\", \\"Manufacturing\\"))"
 }}```""",
         "data_source":
         '''```json
 {{
     "content": "Brief description of educational content",
     "attributes": {{
-        "course": {{
-            "type": "string",
-            "description": "The course relevant to the document. You must pick one of \\"Programming\\", \\"3D Design\\" or \\"Other\\"."
-        }},
         "subject": {{
             "type": "string",
-            "description": "The subject relevant to the document. One of \\"Programming\\", \\"Electronics\\", \\"3D Design\\", \\"Manufacturing\\" or \\"Other\\"."
+            "description": "The subject relevant to the document. One of \\"Programming\\", \\"Electronics\\", \\"Embedded Systems\\", \\"3D Design\\", \\"Manufacturing\\", \\"Miscellaneous\\" or \\"Other\\"."
         }}
     }}
 }}```''',

@@ -291,7 +291,7 @@ function Sidebar({ isOpen, toggleSidebar, chatId, setChatId, userId }) {
         )}
 
         {showDeletePopup && (
-          <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75">
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75">
             <div className="bg-custombg p-8 rounded-lg shadow-lg text-center relative">
               <div className="absolute inset-x-0 top-[-35px] flex justify-center">
                 <div className="h-16 w-16 bg-red-800  rounded-full flex items-center justify-center">

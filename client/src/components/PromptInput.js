@@ -141,9 +141,9 @@ function PromptInput({ onSendMessage, isLoading }) {
     <div style={{ backgroundColor: '#2f2f2f45' }} className="p-2 shadow-md flex flex-col font-sans rounded-full">
       {/* Show file name and icon when a file is attached */}
       {selectedFile && (
-        <div className="flex items-center mb-2">
+        <div className="flex items-center mb-2 ml-20">
           {getFileIcon(selectedFile)}
-          <span className="ml-2 text-gray-700">{selectedFile.name}</span>
+          <span className="ml-2 text-customtxt">{selectedFile.name}</span>
         </div>
       )}
       <div style={{ backgroundColor: '#2f2f2f' }} className=" p-4 shadow-md flex items-center font-sans rounded-full">

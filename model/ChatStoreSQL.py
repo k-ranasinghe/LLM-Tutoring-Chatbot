@@ -50,7 +50,8 @@ def serialize_chat_history(chat_history):
                 "type": "AIMessage",
                 "content": message.content,
                 # Serialize the specific response_metadata fields for AIMessage
-                "context": message.response_metadata
+                "context": message.response_metadata.get("context"),
+                "files": message.response_metadata.get("files")
             }
         else:
             raise ValueError(f"Unknown message type: {message.__class__.__name__}")
@@ -75,7 +76,10 @@ def deserialize_chat_history(serialized_history):
             # Deserialize AIMessage with context metadata
             message = AIMessage(
                 content=serialized_message["content"],
-                response_metadata=serialized_message["context"]
+                response_metadata={
+                    "context": serialized_message.get("context"),
+                    "files": serialized_message.get("files")
+                }
             )
         else:
             raise ValueError(f"Unknown message type: {serialized_message['type']}")
@@ -370,6 +374,45 @@ def get_chat_ids():
     # Return a list of ChatID values
     return [row['ChatID'] for row in chat_ids]
 
+
+def get_all_user_data():
+    connection = None
+    try:
+        connection = get_mysql_connection()
+        cursor = connection.cursor(dictionary=True)
+
+        query = "SELECT UserID, name, Date_of_birth, phone_number, isAdmin FROM User_data"
+        cursor.execute(query)
+        
+        results = cursor.fetchall()
+        return results
+
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+        return None
+
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+def update_user_role(userId, isAdmin):
+    connection = get_mysql_connection()
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute("UPDATE User_data SET isAdmin = %s WHERE UserID = %s", (isAdmin, userId))
+        connection.commit()
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+        connection.rollback()
+    finally:
+        cursor.close()
+        connection.close()
+
+
 # This function is to be used in chain.py to gt values for the course and subject attributes
 def get_courses_and_subjects():
     # Establish a database connection
@@ -409,6 +452,28 @@ def store_feedback(userId, feedback):
     cursor.close()
     connection.close()
 
+def log_feedback(userid, user_query, response, feedback_type, feedback_text, instruction):
+    connection = get_mysql_connection()
+    cursor = connection.cursor()
+
+    query = """
+        INSERT INTO feedback_log (userid, user_query, response, feedback_type, feedback_text, instruction)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """
+    
+    data = (userid, user_query, response, feedback_type, feedback_text, instruction)
+
+    try:
+        cursor.execute(query, data)
+        connection.commit()
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+        connection.rollback()
+    finally:
+        cursor.close()
+        connection.close()
+
+
 def get_existing_feedback(userId):
     connection = get_mysql_connection()
     cursor = connection.cursor()
@@ -424,6 +489,52 @@ def get_existing_feedback(userId):
     if result:
         return result[0]  # Return the existing feedback
     return "No existing feedback"  # No feedback found for this userid
+
+
+def fetch_feedback_logs():
+    connection = get_mysql_connection()
+    cursor = connection.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT * FROM feedback_log")
+        rows = cursor.fetchall()
+        # feedback_logs = [FeedbackLog(**row) for row in rows]
+        return rows
+    finally:
+        cursor.close()
+        connection.close()
+
+
+def delete_feedback(log_id: int):
+    connection = get_mysql_connection()
+    cursor = connection.cursor()
+    
+    try:
+        cursor.execute("DELETE FROM feedback_log WHERE id = %s", (log_id,))
+        connection.commit()
+    except Exception as e:
+        connection.rollback()
+        raise e
+    finally:
+        cursor.close()
+        connection.close()
+
+
+def update_feedback(log_id: int, instruction: str, selected: bool):
+    connection = get_mysql_connection()
+    cursor = connection.cursor()
+    
+    try:
+        cursor.execute(
+            "UPDATE feedback_log SET instruction = %s, selected = %s WHERE id = %s",
+            (instruction, selected, log_id)
+        )
+        connection.commit()
+    except Exception as e:
+        connection.rollback()
+        raise e
+    finally:
+        cursor.close()
+        connection.close()
 
 
 # Function to delete a chat from the MySQL database
@@ -617,13 +728,70 @@ def delete_mentor_query_by_id(query_id: str):
         connection.close()
 
 
+def get_answered_queries(studentid):
+    connection = get_mysql_connection()
+    cursor = connection.cursor(dictionary=True)  # Use dictionary for better readability
+
+    try:
+        # SQL query to fetch the required fields where answered is true
+        query = """
+        SELECT id, query, chatbot_response, mentorid, mentor_response, viewed
+        FROM mentor_queries
+        WHERE studentid = %s AND answered = TRUE
+        """
+        cursor.execute(query, (studentid,))
+        
+        # Fetch all matching rows
+        results = cursor.fetchall()
+        return results
+
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+        return None
+
+    finally:
+        cursor.close()
+        connection.close()
+
+
+def update_query(id):
+    # Establish a connection to the MySQL database
+    connection = get_mysql_connection()
+    cursor = connection.cursor()
+
+    try:
+        # Create the SQL query to update the 'viewed' field where the 'id' matches
+        query = """
+        UPDATE mentor_queries
+        SET viewed = TRUE
+        WHERE id = %s;
+        """
+        # Execute the query with the given id
+        cursor.execute(query, (id,))
+
+        # Commit the changes to the database
+        connection.commit()
+
+        print(f"Notification with ID {id} marked as viewed.")
+    
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+        connection.rollback()  # Roll back in case of any error
+        raise
+    
+    finally:
+        # Close the cursor and connection
+        cursor.close()
+        connection.close()
+
+
 # Function to check if user exists
 def get_user(userid: str):
     try:
         connection = get_mysql_connection()
         cursor = connection.cursor()
 
-        select_query = "SELECT Password FROM User_data WHERE UserID = %s"
+        select_query = "SELECT Password, isAdmin FROM User_data WHERE UserID = %s"
         cursor.execute(select_query, (userid,))
         user_data = cursor.fetchone()
         return user_data
@@ -635,16 +803,16 @@ def get_user(userid: str):
 
 
 # Function to register a new user
-def create_user(email: str, hashed_password: str, dob: date):
+def create_user(email: str, hashed_password: str, dob: date, name: str, phone_number: str):
     try:
         connection = get_mysql_connection()
         cursor = connection.cursor()
 
         insert_query = """
-            INSERT INTO User_data (UserID, Password, Date_of_birth)
-            VALUES (%s, %s, %s)
+            INSERT INTO User_data (UserID, Password, Date_of_birth, name, phone_number)
+            VALUES (%s, %s, %s, %s, %s)
         """
-        cursor.execute(insert_query, (email, hashed_password, dob))
+        cursor.execute(insert_query, (email, hashed_password, dob, name, phone_number))
         connection.commit()
     except Exception as e:
         raise e

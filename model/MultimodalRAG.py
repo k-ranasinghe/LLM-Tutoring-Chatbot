@@ -1,20 +1,21 @@
 import os
 import time
-from pydub import AudioSegment
+from pydub import AudioSegment # type: ignore
 from math import ceil
 import base64
 import tempfile
 from langchain.schema import Document
-import fitz
-import google.generativeai as genai
+import fitz # type: ignore
+import google.generativeai as genai # type: ignore
 import PIL.Image
 from groq import Groq
-import cv2
+from openai import OpenAI
+import cv2 # type: ignore
 from PIL import Image
-import pytesseract
+import pytesseract # type: ignore
 from langchain_openai.embeddings import OpenAIEmbeddings
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_chroma import Chroma
+from langchain_chroma import Chroma # type: ignore
 from dotenv import load_dotenv
 import os
 import warnings
@@ -23,14 +24,15 @@ warnings.filterwarnings("ignore", category=FutureWarning, module="transformers")
 
 # Load environment variables from .env file
 load_dotenv()
-client = Groq(api_key=os.getenv('GROQ_API_KEY'))
+# client = Groq(api_key=os.getenv('GROQ_API_KEY'))
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 ######################### AUDIO ##########################
 # Constants
 MAX_FILE_SIZE_MB = 25
 MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024  # Convert MB to Bytes
 
-def transcribe_audio_files(files_with_names, course, subject):
+def transcribe_audio_files(files_with_names, subject):
     documents = []
 
     for file, file_name in files_with_names:
@@ -48,7 +50,7 @@ def transcribe_audio_files(files_with_names, course, subject):
         print(transcription)
         document = Document(
             page_content=transcription,
-            metadata={"course": course, "subject": subject, "format": "audio", "source": file_name, "id": int(file_id)}
+            metadata={"subject": subject, "format": "audio", "source": file_name, "id": int(file_id)}
         )
 
         documents.append(document)
@@ -124,7 +126,36 @@ def transcribe_large_audio(file, file_size, file_name):
 
 ######################### IMAGES ##########################
 
-def extract_images_from_pdf(pdf_path, output_dir):
+# def extract_images_from_pdf(pdf_path, output_dir):
+#     # Open the PDF file
+#     pdf_document = fitz.open(pdf_path)
+
+#     # Ensure the output directory exists
+#     os.makedirs(output_dir, exist_ok=True)
+
+#     # Extract the PDF's base name without the extension
+#     pdf_name = os.path.splitext(os.path.basename(pdf_path))[0]
+
+#     # Iterate through each page in the PDF
+#     for page_number in range(len(pdf_document)):
+#         page = pdf_document.load_page(page_number)
+#         images = page.get_images(full=True)
+
+#         for img_index, img in enumerate(images):
+#             xref = img[0]
+#             base_image = pdf_document.extract_image(xref)
+#             image_bytes = base_image["image"]
+#             image_ext = base_image["ext"]
+#             image_filename = f"{pdf_name}.pdf_{page_number+1}_img_{img_index+1}.{image_ext}"
+
+#             # Save the extracted image to the output directory
+#             with open(os.path.join(output_dir, image_filename), "wb") as img_file:
+#                 img_file.write(image_bytes)
+
+#     pdf_document.close()
+
+
+def extract_images_from_pdf(pdf_path, output_dir, zoom=2):
     # Open the PDF file
     pdf_document = fitz.open(pdf_path)
 
@@ -137,21 +168,18 @@ def extract_images_from_pdf(pdf_path, output_dir):
     # Iterate through each page in the PDF
     for page_number in range(len(pdf_document)):
         page = pdf_document.load_page(page_number)
-        images = page.get_images(full=True)
 
-        for img_index, img in enumerate(images):
-            xref = img[0]
-            base_image = pdf_document.extract_image(xref)
-            image_bytes = base_image["image"]
-            image_ext = base_image["ext"]
-            image_filename = f"{pdf_name}.pdf_{page_number+1}_img_{img_index+1}.{image_ext}"
+        # Render the page to an image
+        pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom))
+        
+        # Define the output image filename
+        image_filename = f"{pdf_name}_page_{page_number + 1}.png"
 
-            # Save the extracted image to the output directory
-            with open(os.path.join(output_dir, image_filename), "wb") as img_file:
-                img_file.write(image_bytes)
+        # Save the rendered image to the output directory
+        pix.save(os.path.join(output_dir, image_filename))
 
+    # Close the PDF document
     pdf_document.close()
-
 
 def process_all_pdfs(input_dir, output_dir):
     # Ensure the output directory exists
@@ -190,20 +218,20 @@ def generate_captions_for_images(output_dir):
         if os.path.isfile(image_path) and image_filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp')):
             img = PIL.Image.open(image_path)
             initial_caption = pytesseract.image_to_string(img).strip()
+            gemini_counter += 1
             
             if gemini_counter < gemini_tpm_limit:
                 # If the Gemini model can still process images
                 response = gemini_model.generate_content(img)
                 model_caption = response.text.strip()
-                gemini_counter += 1
-
+                
                 combined_caption = (f"Caption by pytesseract:\n{initial_caption}\n\n"
                                     f"Caption by model:\n{model_caption}")
 
                 print(f"Gemini processed {gemini_counter} images.")
             else:
                 # If Gemini reaches the cap, switch to Llama
-                print("Gemini model limit reached. Switching to Llama model.")
+                print(f"GPT-4o processed {gemini_counter - 13} images.")
                 
                 # Convert image to base64 to pass to Llama
                 with open(image_path, "rb") as image_file:
@@ -224,7 +252,7 @@ def generate_captions_for_images(output_dir):
                             ],
                         }
                     ],
-                    model="llama-3.2-11b-vision-preview",
+                    model="gpt-4o-mini",
                 )
                 
                 llama_caption = chat_completion.choices[0].message.content
@@ -242,21 +270,20 @@ def generate_captions_for_images(output_dir):
     return captions
 
 # Step 2: Create a Document with All Captions
-def create_documents_from_captions(captions, course, subject):
+def create_documents_from_captions(captions, subject):
     documents = []
 
     for image_filename, caption in captions:
         # Extracting the source file name and page number from the filename
         # Assuming the filename format is "source_file_page_1000_img_1.png"
         parts = image_filename.split('_')
-        source_file = '_'.join(parts[:-3])  # This extracts the source file name
-        page_number = parts[-3]  # This extracts '1000' from 'page_1000_img_1.png'
-        img_number = parts[-1].split('.')[0]  # This extracts '1' from 'page_1000_img_1.png'
+        source_file = '_'.join(parts[:-2])  # This extracts the source file name
+        page_number = parts[-1].split('.')[0]  # This extracts '1000' from 'page_1000_img_1.png'
         file_id, file_name = source_file.split('-', 1)
 
         document = Document(
             page_content=caption,
-            metadata={"course": course, "subject": subject, "format": "image", "source": file_name, "page": int(page_number), "img": int(img_number), "id": int(file_id)}
+            metadata={"subject": subject, "format": "image", "source": file_name, "page": int(page_number), "img": image_filename, "id": int(file_id)}
         )
         documents.append(document)
 
@@ -385,7 +412,7 @@ def transcribe_frames(input_dir):
     return transcriptions
 
 
-def create_documents_from_frames(captions, course, subject):
+def create_documents_from_frames(captions, subject):
     documents = []
 
     for image_filename, caption in captions.items():
@@ -400,7 +427,6 @@ def create_documents_from_frames(captions, course, subject):
         document = Document(
             page_content=caption,
             metadata={
-                "course": course, 
                 "subject": subject, 
                 "format": "video",
                 "source": file_name,
@@ -414,7 +440,7 @@ def create_documents_from_frames(captions, course, subject):
     return documents
 
 
-def process_videos_in_directory(input_dir, output_dir_base, frame_rate, course, subject):
+def process_videos_in_directory(input_dir, output_dir_base, frame_rate, subject):
     documents=[]
     # Iterate over all video files in the input directory
     for video_filename in os.listdir(input_dir):
@@ -431,7 +457,7 @@ def process_videos_in_directory(input_dir, output_dir_base, frame_rate, course, 
             transcriptions = transcribe_frames(video_output_dir)
 
             # Create documents with the required format
-            document = create_documents_from_frames(transcriptions, course, subject)
+            document = create_documents_from_frames(transcriptions, subject)
             for doc in document:
                 documents.append(doc)
 
@@ -498,7 +524,7 @@ def text_preprocess(input_dir):
 
 
 
-def update_metadata(documents, course, subject):
+def update_metadata(documents, subject):
     updated_documents = []
 
     for doc in documents:
@@ -510,7 +536,6 @@ def update_metadata(documents, course, subject):
         file_id, file_name = os.path.basename(file_path).split('-', 1)
 
         # Modify metadata as needed
-        updated_metadata['course'] = course 
         updated_metadata['subject'] = subject 
         updated_metadata['format'] = 'text'
         updated_metadata['source'] = file_name

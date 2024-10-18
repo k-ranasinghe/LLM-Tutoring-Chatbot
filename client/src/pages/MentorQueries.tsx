@@ -140,83 +140,85 @@ const MentorQueries: React.FC = () => {
                             <Grid item xs={12}>
                                 <List>
                                     {queries.map((query) => (
-                                        <ListItem
-                                            key={query.id}
-                                            button
-                                            onClick={() => handleSelectQuery(query.id)}
-                                            sx={{
-                                                backgroundColor: selectedQueryId === query.id ? '#2f2f2f' : 'transparent',
-                                                transition: 'background-color 0.3s',
-                                                borderRadius: '4px',
-                                                '&:hover': {
-                                                    backgroundColor: '#2f2f2f55',
-                                                },
-                                            }}
-                                        >
-                                            <ListItemText
-                                                secondary={
-                                                    <>
-                                                        <Typography variant="caption" color="textSecondary">
-                                                            User ID: {query.userId}
-                                                        </Typography>
-                                                        <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{query.queryText}</Typography>
-                                                        <Typography variant="body2" color="textSecondary">
-                                                            Chatbot Response: {query.chatbotResponse}
-                                                        </Typography>
-                                                    </>
-                                                }
-                                            />
-                                            <ListItemSecondaryAction>
-                                                <IconButton
-                                                    edge="end"
-                                                    aria-label="delete"
-                                                    onClick={() => handleDeleteQuery(query.id)}
-                                                    sx={{
-                                                        '&:hover': {
-                                                            color: 'red', // Change color to red on hover
-                                                        },
-                                                    }}
-                                                >
-                                                    <DeleteIcon />
-                                                </IconButton>
-                                            </ListItemSecondaryAction>
-                                        </ListItem>
+                                        <React.Fragment key={query.id}>
+                                            <ListItem
+                                                button
+                                                onClick={() => handleSelectQuery(query.id)}
+                                                sx={{
+                                                    backgroundColor: selectedQueryId === query.id ? '#2f2f2f' : 'transparent',
+                                                    transition: 'background-color 0.3s',
+                                                    borderRadius: '4px',
+                                                    '&:hover': {
+                                                        backgroundColor: '#2f2f2f55',
+                                                    },
+                                                }}
+                                            >
+                                                <ListItemText
+                                                    secondary={
+                                                        <>
+                                                            <Typography variant="caption" color="textSecondary">
+                                                                User ID: {query.userId}
+                                                            </Typography>
+                                                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{query.queryText}</Typography>
+                                                            <Typography variant="body2" color="textSecondary">
+                                                                Chatbot Response: {query.chatbotResponse}
+                                                            </Typography>
+                                                        </>
+                                                    }
+                                                />
+                                                <ListItemSecondaryAction>
+                                                    <IconButton
+                                                        edge="end"
+                                                        aria-label="delete"
+                                                        onClick={() => handleDeleteQuery(query.id)}
+                                                        sx={{
+                                                            '&:hover': {
+                                                                color: 'red', // Change color to red on hover
+                                                            },
+                                                        }}
+                                                    >
+                                                        <DeleteIcon />
+                                                    </IconButton>
+                                                </ListItemSecondaryAction>
+                                            </ListItem>
+
+                                            {/* Conditionally render response panel below the selected query */}
+                                            {selectedQueryId === query.id && (
+                                                <Box mt={2} mb={2}>
+                                                    <TextField
+                                                        label="Mentor ID"
+                                                        variant="outlined"
+                                                        fullWidth
+                                                        value={mentorId}
+                                                        onChange={(e) => setMentorId(e.target.value)}
+                                                        sx={{ marginBottom: 2 }} // Add some spacing
+                                                    />
+                                                    <TextField
+                                                        label="Your Response"
+                                                        variant="outlined"
+                                                        fullWidth
+                                                        multiline
+                                                        rows={4}
+                                                        value={mentorResponse}
+                                                        onChange={(e) => setMentorResponse(e.target.value)}
+                                                    />
+                                                    <Button
+                                                        variant="contained"
+                                                        color="primary"
+                                                        onClick={() => handleResponseSubmit(query.id)}
+                                                        disabled={!mentorResponse || !mentorId || updating}
+                                                        fullWidth
+                                                        sx={{ marginTop: 2 }}
+                                                    >
+                                                        {updating ? <CircularProgress size={24} /> : "Submit Response"}
+                                                    </Button>
+                                                </Box>
+                                            )}
+                                        </React.Fragment>
                                     ))}
                                 </List>
                             </Grid>
                         </Grid>
-                    )}
-
-                    {selectedQueryId && (
-                        <Box mt={2}>
-                            <TextField
-                                label="Mentor ID"
-                                variant="outlined"
-                                fullWidth
-                                value={mentorId}
-                                onChange={(e) => setMentorId(e.target.value)}
-                                sx={{ marginBottom: 2 }} // Add some spacing
-                            />
-                            <TextField
-                                label="Your Response"
-                                variant="outlined"
-                                fullWidth
-                                multiline
-                                rows={4}
-                                value={mentorResponse}
-                                onChange={(e) => setMentorResponse(e.target.value)}
-                            />
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                onClick={() => handleResponseSubmit(selectedQueryId!)}
-                                disabled={!mentorResponse || !mentorId || updating}
-                                fullWidth
-                                sx={{ marginTop: 2 }}
-                            >
-                                {updating ? <CircularProgress size={24} /> : "Submit Response"}
-                            </Button>
-                        </Box>
                     )}
                 </Container>
             </Box>

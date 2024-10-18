@@ -1,7 +1,16 @@
 // src/components/Header.js
 import React from 'react';
+import Cookies from 'js-cookie';
 
-function Header({ navItem, isAdmin }) {
+function Header({ isAdmin }) {
+  const handleSignOut = () => {
+    // Remove the cookies
+    Cookies.remove('userId');
+    Cookies.remove('isAdmin');
+    // Redirect to login page
+    window.location.href = '/login';
+  };
+
   return (
     <header style={{ backgroundColor: "#2f2f2f11" }} className="shadow-xl pb-0.5 w-full font-sans">
       <div style={{ backgroundColor: "#2f2f2f" }} className="container mx-auto flex justify-between items-center">
@@ -20,14 +29,21 @@ function Header({ navItem, isAdmin }) {
                 </a>
               </li>
             )}
-            {/* Display the navItem link if it exists */}
-            {navItem && (
-              <li className="text-lg bg-customtxt font-medium transition duration-300 transform hover:scale-105 p-2 rounded-2xl">
-                <a href={navItem.route} className="text-custombg font-bold hover:text-gray-700">
-                  {navItem.label}
-                </a>
-              </li>
-            )}
+            {/* Display the Sign Out button */}
+            <li className="text-lg bg-customtxt font-medium transition duration-300 transform hover:scale-105 p-2 rounded-2xl">
+              <button
+                className="text-custombg font-bold hover:text-gray-700"
+                onClick={handleSignOut} // Call handleSignOut on click
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                }}
+              >
+                Sign Out
+              </button>
+            </li>
           </ul>
         </nav>
       </div>

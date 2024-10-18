@@ -24,7 +24,6 @@ import SideBar from "../components/SideBar.tsx";
 const UploadFiles: React.FC = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState<boolean>(false);
-  const [course, setCourse] = useState<string>(""); // State for course
   const [subject, setSubject] = useState<string>(""); // State for subject
   const [recentFiles, setRecentFiles] = useState<any[]>([]);
 
@@ -51,7 +50,6 @@ const UploadFiles: React.FC = () => {
     files.forEach((file) => {
       formData.append("files", file); // Append file directly
     });
-    formData.append("course", course); // Append course
     formData.append("subject", subject); // Append subject
 
     try {
@@ -71,7 +69,6 @@ const UploadFiles: React.FC = () => {
       console.log(result); // Handle the response data
       alert("Files uploaded successfully!");
       setFiles([]);
-      setCourse(""); // Clear course input
       setSubject(""); // Clear subject input
       fetchRecentFiles();
     } catch (error) {
@@ -150,7 +147,7 @@ const UploadFiles: React.FC = () => {
             <Typography variant="h4" gutterBottom>
               Upload Files
             </Typography>
-            <Box mt={4} p={3} borderRadius="15px" bgcolor="#171717">
+            {/* <Box mt={4} p={3} borderRadius="15px" bgcolor="#171717">
               <Typography variant="h5" gutterBottom>
                 Supported File Formats
               </Typography>
@@ -215,7 +212,7 @@ const UploadFiles: React.FC = () => {
                   <Tooltip title='Extensible Markup Language' arrow><strong style={{ marginRight: '20px' }}>.xml</strong></Tooltip>
                 </Typography>
               </Box>
-            </Box>
+            </Box> */}
             <Grid container spacing={2} style={{ marginTop: '20px' }}>
               <Grid item xs={12}>
                 <Button
@@ -260,48 +257,24 @@ const UploadFiles: React.FC = () => {
               )}
             </Box>
             <Box mt={2}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth variant="outlined" size="small">
-                    <InputLabel>Course</InputLabel>
-                    <Select
-                      value={course}
-                      onChange={(e) => setCourse(e.target.value as string)}
-                      label="Course"
-                      style={{ fontSize: '1.1rem' }}
-                    >
-                      <MenuItem value="">Select a course</MenuItem>
-                      <MenuItem value="Programming">Programming</MenuItem>
-                      <MenuItem value="Electronics">Electronics</MenuItem>
-                      <MenuItem value="3D Design">3D Design</MenuItem>
-                      <MenuItem value="Manufacturing">Manufacturing</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth variant="outlined" size="small">
-                    <InputLabel>Subject</InputLabel>
-                    <Select
-                      value={subject}
-                      onChange={(e) => setSubject(e.target.value as string)}
-                      label="Subject"
-                      style={{ fontSize: '1.1rem' }}
-                    >
-                      <MenuItem value="">Select a subject</MenuItem>
-                      <MenuItem value="3D Design">3D Design - I</MenuItem>
-                      <MenuItem value="3D Design">3D Design - II</MenuItem>
-                      <MenuItem value="Manufacturing">Manufacturing - I</MenuItem>
-                      <MenuItem value="Manufacturing">Manufacturing - II</MenuItem>
-                      <MenuItem value="Electronics">Electronics - I</MenuItem>
-                      <MenuItem value="Electronics">Electronics - II</MenuItem>
-                      <MenuItem value="Embedded Systems">Embedded Systems - I</MenuItem>
-                      <MenuItem value="Embedded Systems">Embedded Systems - II</MenuItem>
-                      <MenuItem value="Programming">Programming and Algorithms - I</MenuItem>
-                      <MenuItem value="Programming">Programming and Algorithms - II</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth variant="outlined" size="small">
+                  <InputLabel>Subject</InputLabel>
+                  <Select
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value as string)}
+                    label="Subject"
+                    style={{ fontSize: '1.1rem' }}
+                  >
+                    <MenuItem value="">Select a subject</MenuItem>
+                    <MenuItem value="Electronics">Electronics - I</MenuItem>
+                    <MenuItem value="Electronics">Electronics - II</MenuItem>
+                    <MenuItem value="Embedded Systems">Embedded Systems - I</MenuItem>
+                    <MenuItem value="Embedded Systems">Embedded Systems - II</MenuItem>
+                    <MenuItem value="Programming">Programming and Algorithms - I</MenuItem>
+                    <MenuItem value="Programming">Programming and Algorithms - II</MenuItem>
+                  </Select>
+                </FormControl>
               </Grid>
             </Box>
             <Box mt={2}>
@@ -309,7 +282,7 @@ const UploadFiles: React.FC = () => {
                 variant="contained"
                 color="primary"
                 onClick={handleFileUpload}
-                disabled={files.length === 0 || uploading || !course || !subject}
+                disabled={files.length === 0 || uploading || !subject}
                 fullWidth
               >
                 {uploading ? <CircularProgress size={24} /> : "Upload Files"}

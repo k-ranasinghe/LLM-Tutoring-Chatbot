@@ -30,13 +30,8 @@ def create_chain(vectorStore):
     # from the database. Didn't use it because we need to update the knowledge base to include these attribute values.
     metadata_field_info = [
         AttributeInfo(
-            name="course",
-            description='The course relevant to the document. You must pick one of "Programming", "3D Design" or "Other".',
-            type="string",
-        ),
-        AttributeInfo(
             name="subject",
-            description='The subject relevant to the document. One of "Programming", "Electronics", "3D Design", "Manufacturing" or "Other".',
+            description='The subject relevant to the document. One of "Programming", "Electronics", "Embedded Systems", "3D Design", "Manufacturing", "Non-Technical", "Sports", "Business and Finance" or "Other".',
             type="string",
         ),
     ]
@@ -63,11 +58,23 @@ def create_chain(vectorStore):
     retriever_prompt = ChatPromptTemplate.from_messages([
         MessagesPlaceholder(variable_name="chat_history"),
         ("human", "{input}"),
-        ("human", "Given the above conversation, generate a search query to look up in order to get information relevant to the " +
-                "conversation from the knowledge base. Additionally we are filtering the database for the most relevant vectors before " +
-                "doing the similarity search. Filtering criteria are course[one of 'Programming', '3D Design', 'Miscellaneous' or 'Other'], and subject[one " +
-                "of 'Programming', 'Electronics', '3D Design', 'Manufacturing', 'Miscellaneous' or 'Other']. Your response must contain the search query and the " +
-                "filtering criteria. Do not include anything else. Let's think step by step."),
+        ("human", 
+            """Based on the conversation above and the user's latest query, generate a focused search query and appropriate filtering criteria. Follow these steps:
+
+            1. Analyze the user's latest query and identify the main topic or concept.
+            2. Consider any relevant context from the chat history, but prioritize the latest query.
+            3. Formulate a concise, specific search query that captures the core information need. Keep it to about 15-20 words.
+            4. Determine the most relevant subject for filtering from the following options:
+            'Programming', 'Electronics', 'Embedded Systems', '3D Design', 'Manufacturing', 'Miscellaneous', 'Non-Technical', 'Sports', 'Business and Finance' or 'Other'
+
+            Your response should be in the following format:
+            Search Query: <your generated search query>
+            Filter: subject = <chosen subject>
+
+            Ensure your search query is detailed enough to yield relevant results but not so specific that it might miss valuable information. The filter should be the single most relevant subject to the query.
+
+            Do not include any explanations or additional text in your response."""
+        )
     ])
 
 

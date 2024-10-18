@@ -68,10 +68,12 @@ def generate_query(input_text, response, chat_history):
     prompt = ChatPromptTemplate.from_messages([
         ("human", """
         **Conversation History**: {chat_history}
-        Use the chat history provided above to gain context when generating the response. The chat history is ordered from oldest to newest. So give more weight to the most recent messages.
         **User Query:** {input_text}
         **Chatbot Response:** {response}
-        For the above user query and AI response, generate a query to search the web for recommended resources. Do not include anything other than the search query in your response. Keep your response consice and less than 25 words long. Do not include quotations in the response.
+        
+        Using the provided context, generate a concise web search query (15-25 words) to find relevant resources. 
+        Prioritize recent messages in the chat history and provided user query and chatbot response. 
+        Output only the search query without quotations or additional text.
         """)
     ])
     chain = LLMChain(llm=model, prompt=prompt)

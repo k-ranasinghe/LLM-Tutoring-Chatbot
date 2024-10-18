@@ -1,6 +1,6 @@
 from langchain_openai import OpenAIEmbeddings
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_chroma import Chroma
+from langchain_chroma import Chroma # type: ignore
 from langchain_core.messages import HumanMessage, AIMessage
 from dotenv import load_dotenv
 import os
@@ -52,6 +52,7 @@ def process_chat(chain, question, extract, chat_history, chat_summary, personali
 # Used to show Recommended Resources in the chat interface.
 def process_context(context):
     result_lines = []
+    files=[]
     for c in context:
         metadata = getattr(c, "metadata", {})
         source = metadata["source"]
@@ -60,15 +61,19 @@ def process_context(context):
         if format_type == "text":
             page = metadata["page"]
             line = f"{source}, Page: {page}"
+        elif format_type == "image":
+            line = f"{source}"
+            url = f"http://localhost:8000/images/{metadata["img"]}"
+            files.append(url)
         else:
             line = f"{source}"
         
         result_lines.append(line)
 
-    return result_lines
+    return result_lines, files
 
 
-def update_chat_history_and_summary(ChatID, UserID, input_text, mediaType, fileName, chat_history, response, context, internal_response, personalization, chat_summary):
+def update_chat_history_and_summary(ChatID, UserID, input_text, mediaType, fileName, chat_history, response, context, files, internal_response, personalization, chat_summary):
     if context == []:
         resources = []
         store_mentor_query(UserID, input_text, internal_response)
@@ -77,7 +82,7 @@ def update_chat_history_and_summary(ChatID, UserID, input_text, mediaType, fileN
     
     # Store input and response in chat history
     chat_history.append(HumanMessage(content=input_text, response_metadata={"mediaType": mediaType, "fileName": fileName}))
-    chat_history.append(AIMessage(content=response, response_metadata={"context": resources}))
+    chat_history.append(AIMessage(content=response, response_metadata={"context": resources, "files": files}))
 
     if personalization["chat_title"] == "":
         personalization["chat_title"] = generate_chat_title(chat_history)
@@ -115,7 +120,7 @@ def run_model(ChatID, UserID, input_text, extract, mediaType, fileName, preloade
 
     print("Courses:", courses_string)
     print("Subjects:", subjects_string)
-
+    
     chat_history = preloaded_data[ChatID]["chat_history"]
     chat_summary = preloaded_data[ChatID]["chat_summary"]
     personalization = preloaded_data[ChatID]["personalization"]
@@ -128,13 +133,13 @@ def run_model(ChatID, UserID, input_text, extract, mediaType, fileName, preloade
         # Only the latest 5 query-response pairs are used in processing phase. This maintains a fixed token size.
         latest_chat_history = chat_history[-10:]
         response, context, internal_response = process_chat(chain, input_text, extract, latest_chat_history, chat_summary, personalization, notes, feedback)
-        formatted_string = process_context(context)
+        formatted_string, files = process_context(context)
         response_time = str(time.time()-start)
         print(response_time)
-        response_str = {"response":response, "response_time":response_time, "context":formatted_string}
+        response_str = {"response":response, "response_time":response_time, "context":formatted_string, "files":files}
 
         # Offload the chat history and summary updates to a background task
-        background_tasks.add_task(update_chat_history_and_summary, ChatID, UserID, input_text, mediaType, fileName, chat_history, response, context, internal_response, personalization, chat_summary)
+        background_tasks.add_task(update_chat_history_and_summary, ChatID, UserID, input_text, mediaType, fileName, chat_history, response, context, files, internal_response, personalization, chat_summary)
 
 
         return (response_str)

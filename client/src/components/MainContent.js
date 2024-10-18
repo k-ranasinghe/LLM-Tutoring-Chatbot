@@ -3,12 +3,18 @@ import React, { useState, useEffect, useRef } from 'react';
 import PromptInput from './PromptInput';
 import Chat from './Chat';
 import axios from 'axios';
+import { ChatBubbleOvalLeftEllipsisIcon } from '@heroicons/react/24/outline';
 
-function MainContent({ isSidebarOpen, chatId }) {
+function MainContent({ isSidebarOpen, chatId, userId }) {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [isNotificationPanelOpen, setIsNotificationPanelOpen] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState(null);
+  const [unviewedCount, setUnviewedCount] = useState(0);
+  const notificationButtonRef = useRef(null);
   const chatEndRef = useRef(null);
-  const userId = "user123";
+  // const userId = "user123";
 
   const handleSendMessage = async (message) => {
     setMessages([...messages, { text: message.text, type: 'user', shouldStream: false, mediaType: message.mediaType, fileName: message.fileName, userQuery: message.text }]);
@@ -37,10 +43,11 @@ function MainContent({ isSidebarOpen, chatId }) {
 
       const botMessage = response.data['response'];
       const botContext = response.data['context'];
+      const botFiles = response.data['files'];
 
       setMessages((prevMessages) => [
         ...prevMessages,
-        { text: [botMessage, botContext], type: 'bot', shouldStream: true, mediaType: 'text', fileName: 'text', userQuery: message.text },
+        { text: [botMessage, botContext, botFiles], type: 'bot', shouldStream: true, mediaType: 'text', fileName: 'text', userQuery: message.text },
       ]);
 
     } catch (error) {
@@ -69,10 +76,11 @@ function MainContent({ isSidebarOpen, chatId }) {
           // If the bot message contains context, ensure it’s added correctly
           const botMessage = msg.content;
           const botContext = msg.response_metadata["context"];
+          const botFiles = msg.response_metadata["files"];
 
           setMessages((prevMessages) => [
             ...prevMessages,
-            { text: [botMessage, botContext], type: 'bot', shouldStream: false, mediaType: 'text', fileName: 'text' }, // Combine bot message and context
+            { text: [botMessage, botContext, botFiles], type: 'bot', shouldStream: false, mediaType: 'text', fileName: 'text' }, // Combine bot message and context
           ]);
         }
       });
@@ -82,6 +90,49 @@ function MainContent({ isSidebarOpen, chatId }) {
     }
   };
 
+  const fetchNotifications = async () => {
+    try {
+      const response = await axios.get(`http://localhost:8000/get-notifications?user_id=${userId}`);
+      setNotifications(response.data); // Assume response structure
+      
+      const unviewedNotifications = response.data.filter((notification) => notification.viewed === 0);
+      setUnviewedCount(unviewedNotifications.length);
+      console.log(unviewedNotifications.length);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
+  const handleNotificationsClick = () => {
+    fetchNotifications();
+    setIsNotificationPanelOpen(!isNotificationPanelOpen); // Toggle panel visibility
+  };
+
+  const handleNotificationClick = async (notification) => {
+    if (notification.viewed === 0) {
+      // Mark as viewed in local state
+      const updatedNotifications = notifications.map((notif) =>
+        notif.id === notification.id ? { ...notif, viewed: 1 } : notif
+      );
+      setNotifications(updatedNotifications);
+  
+      // Decrease unviewed count
+      setUnviewedCount((prevCount) => prevCount - 1);
+  
+      // Send the update to the backend
+      try {
+        const id = notification.id;
+        await axios.post(`http://localhost:8000/update-notification?id=${id}`);
+
+      } catch (error) {
+        console.error('Error updating notification:', error);
+      }
+    }
+  
+    // Set the selected notification for detailed view
+    setSelectedNotification(notification);
+  };
+
   // UseEffect to load chat messages when chatId changes
   useEffect(() => {
     if (chatId) {
@@ -89,6 +140,10 @@ function MainContent({ isSidebarOpen, chatId }) {
       loadChat(chatId);
     }
   }, [chatId]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
 
   useEffect(() => {
     // Scroll to the bottom when messages change
@@ -122,9 +177,82 @@ function MainContent({ isSidebarOpen, chatId }) {
           <div ref={chatEndRef} /> {/* Scroll to this ref */}
         </div>
         <div className="pr-32">
-          <PromptInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+          <div className="flex items-center">
+            <div className="flex-grow">
+              <PromptInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+            </div>
+            <button
+              ref={notificationButtonRef}
+              className="relative -mr-16 ml-3 p-2 rounded-full bg-customtxt"
+              onClick={handleNotificationsClick}
+            >
+              <ChatBubbleOvalLeftEllipsisIcon className="h-8 w-8 text-gray-700 hover:text-sky-700 transform hover:scale-125 transition-transform duration-200" />
+              {unviewedCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full h-5 w-5 flex items-center justify-center text-sm">
+                  {unviewedCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </div>
+      {isNotificationPanelOpen && (
+        <div
+          className="absolute z-50"
+          style={{
+            bottom: notificationButtonRef.current
+              ? notificationButtonRef.current.getBoundingClientRect().top - 545 // Adjust as needed
+              : 0,
+            left: notificationButtonRef.current
+              ? notificationButtonRef.current.getBoundingClientRect().left - 355
+              : 0,
+            maxHeight: '500px',
+            width: '400px',
+            overflowY: 'auto',
+          }}
+        >
+          <div className="bg-custombg p-8 rounded-2xl shadow-lg">
+            <h2 className="text-2xl font-bold mb-5 text-customtxt text-center">Notification Panel</h2>
+            {notifications.length === 0 ? (
+              <p className="text-center text-customtxt">You do not currently have any notifications.</p>
+            ) : (
+              <ul>
+                {notifications.map((notification, index) => (
+                  <li
+                    key={index}
+                    className={`p-2 mb-1 text-customtxt hover:bg-custombg2 cursor-pointer border border-customtxt rounded-3xl ${
+                      notification.viewed === 0 ? 'bg-custombg3' : ''
+                    }`}
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    {notification.query}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="flex justify-center">
+              <button
+                className="mt-4 p-3 px-5 bg-customtxt text-custombg font-bold rounded-2xl hover:scale-105 transition-transform duration-200"
+                onClick={() => setIsNotificationPanelOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedNotification && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center" onClick={() => setSelectedNotification(null)}>
+          <div className="bg-custombg text-customtxt p-8 rounded-2xl shadow-lg w-1/3 space-y-2">
+            <h2 className="text-xl font-bold text-center">Notification Details</h2>
+            <p><strong>Query:</strong> {selectedNotification.query}</p>
+            {/* <p><strong>Chatbot Response:</strong> {selectedNotification.chatbot_response}</p> */}
+            <p><strong>Mentor Response:</strong> {selectedNotification.mentor_response}</p>
+            <p><strong>Mentor ID:</strong> {selectedNotification.mentorid}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

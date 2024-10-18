@@ -1,27 +1,28 @@
 from fastapi import FastAPI, Request, BackgroundTasks, HTTPException, UploadFile, File, Form
+from fastapi.staticfiles import StaticFiles
 from typing import List
 from pydantic import BaseModel
-from passlib.context import CryptContext
+from passlib.context import CryptContext # type: ignore
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import shutil
 import random
 import string
 from groq import Groq
-from langchain_chroma import Chroma
+from langchain_chroma import Chroma # type: ignore
 from fastapi.responses import StreamingResponse, JSONResponse
-from gtts import gTTS
+from gtts import gTTS # type: ignore
 import io
-import aiofiles
+import aiofiles # type: ignore
 from datetime import datetime, date
 
 from app import run_model
 from FileProcess import process_file
 from ProcessFeedback import review_feedback
 from whatsapp import whatsapp
-from ChatStoreSQL import (update_personalization_params, get_personalization_params, get_past_chats, get_chat_ids, 
-                        load_chat_history, store_feedback, get_existing_feedback, delete_chat, get_mentor_notes, 
-                        insert_mentor_notes, get_mentor_queries, respond_to_query, delete_mentor_query_by_id, get_user, create_user)
+from ChatStoreSQL import (update_personalization_params, get_personalization_params, get_past_chats, get_chat_ids, get_all_user_data, update_user_role,
+                        load_chat_history, store_feedback, log_feedback, get_existing_feedback, fetch_feedback_logs, delete_feedback, update_feedback, delete_chat, get_mentor_notes, 
+                        insert_mentor_notes, get_mentor_queries, respond_to_query, delete_mentor_query_by_id, get_answered_queries, update_query, get_user, create_user)
 from MultimodalRAG import (transcribe_audio_files, process_all_pdfs, generate_captions_for_images, 
                             create_documents_from_captions, process_videos_in_directory, 
                             text_preprocess, update_metadata, save_doc)
@@ -40,6 +41,10 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 UPLOAD_DIRECTORY = "uploads"
 os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
 
+# Directory to store images relevant to the knowledge base
+IMG_DIRECTORY = "images"
+os.makedirs(IMG_DIRECTORY, exist_ok=True)
+
 class PersonalizationData(BaseModel):
     ChatID: str
     UserID: str
@@ -54,12 +59,21 @@ class TextRequest(BaseModel):
     text: str
     
 
+class UpdateUserRole(BaseModel):
+    userId: str
+    isAdmin: bool
+
 class Feedback(BaseModel):
     text: str
     feedback: str
     feedbackText: str
     userText: str
     userId: str
+
+class UpdateFeedback(BaseModel):
+    id: int
+    instruction: str
+    selected: bool
 
 class DeleteChatRequest(BaseModel):
     chat_id: str
@@ -83,6 +97,8 @@ class User(BaseModel):
     email: str
     password: str
     dateOfBirth: str
+    name: str
+    phoneNumber: str
 
 class LoginModel(BaseModel):
     email: str
@@ -102,6 +118,8 @@ app.add_middleware(
     allow_methods=["*"],  # Allows all HTTP methods
     allow_headers=["*"],  # Allows all HTTP headers
 )
+
+app.mount("/images", StaticFiles(directory=IMG_DIRECTORY), name="images")
 
 async def handle_file(file):
     # Async file read and write
@@ -129,12 +147,12 @@ def verify_login(email: str, password: str):
     user_data = get_user(email)
 
     if not user_data:
-        return {"success": False, "message": "Invalid email or password"}
+        return {"success": False, "message": "Invalid email or password", "isAdmin": user_data[1]}
 
     if not verify_password(password, user_data[0]):
-        return {"success": False, "message": "Invalid email or password"}
+        return {"success": False, "message": "Invalid email or password", "isAdmin": user_data[1]}
 
-    return {"success": True, "message": "Login successful"}
+    return {"success": True, "message": "Login successful", "isAdmin": user_data[1]}
 
 # Function to generate random ChatID
 def generate_random_string(length, past_chats):
@@ -195,6 +213,7 @@ async def process_input(ChatID: str = Form(...), UserID: str = Form(...), input_
     if file:
         # Handle the uploaded file
         file_location = await handle_file(file)
+        
         # Process the file content
         extract = process_file(file_location, input_text, background_tasks)
         
@@ -296,6 +315,25 @@ async def get_chat(chat_id: str, background_tasks: BackgroundTasks = BackgroundT
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/get-users")
+async def get_users():
+    user_data = get_all_user_data()
+    if user_data is None:
+        raise HTTPException(status_code=500, detail="Could not retrieve user data.")
+    return user_data
+
+
+@app.put("/update-user")
+async def update_user_endpoint(request: UpdateUserRole):
+    try:
+        userId = request.userId
+        isAdmin = request.isAdmin
+        update_user_role(userId, isAdmin)
+        return {"message": "User role updated successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/transcribe-audio")
 async def get_transcription(file: UploadFile = File(...)):
     try:
@@ -351,10 +389,41 @@ async def feedback(request: Feedback, background_tasks: BackgroundTasks = Backgr
     
     # Store the updated review in the feedback table
     store_feedback(userId, review)
+    log_feedback(userId, userText, text, feedback_type, feedbackText, review)
     
     background_tasks.add_task(preload_user_data, userId)
 
     return review
+
+
+@app.get("/feedback-logs")
+async def get_feedback_logs():
+    try:
+        feedback_logs = fetch_feedback_logs()
+        return feedback_logs
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/delete-feedback")
+async def delete_feedback_endpoint(id: int):
+    try:
+        delete_feedback(id)
+        return {"message": "Feedback log deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.put("/update-feedback")
+async def update_feedback_endpoint(request: UpdateFeedback):
+    try:
+        id = request.id
+        instruction = request.instruction
+        selected = request.selected
+        update_feedback(id, instruction, selected)
+        return {"message": "Feedback log updated successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/delete-chat")
@@ -451,7 +520,7 @@ async def delete_data(id: int):
 
 
 @app.post("/upload-files")
-async def write_data(course: str = Form(...), subject: str = Form(...), files: List[UploadFile] = File(...)):
+async def write_data(subject: str = Form(...), files: List[UploadFile] = File(...)):
 
     audio_files = []
     converted_audio_files = []
@@ -463,7 +532,6 @@ async def write_data(course: str = Form(...), subject: str = Form(...), files: L
     for file in files:
         file_info.append({
             "filename": file.filename,
-            "course": course,
             "subject": subject
         })
 
@@ -493,7 +561,7 @@ async def write_data(course: str = Form(...), subject: str = Form(...), files: L
                 audio_files.append((content, file.name))
         if file_name.endswith(".pdf"):
                 pdf_files.append((content, file))
-                text_files.append(file)
+                # text_files.append(file)
         if file_name.endswith((".mp4", ".avi", ".mov", ".mkv", ".webm", ".mpeg", ".ogg")):
                 video_files.append((content, file.name))
         if file_name.endswith((".docx", ".txt", ".html", ".md", ".epub", ".pptx", ".csv", ".xlsx", ".ipynb", ".py", ".xml")):
@@ -506,7 +574,7 @@ async def write_data(course: str = Form(...), subject: str = Form(...), files: L
             # audio, sr = librosa.load(io.BytesIO(file_content), sr=None)
             converted_audio_files.append((content, file_name))
 
-        transcribed_audio_files = transcribe_audio_files(converted_audio_files, course, subject)
+        transcribed_audio_files = transcribe_audio_files(converted_audio_files, subject)
     
     ############## Images ###############
 
@@ -527,7 +595,7 @@ async def write_data(course: str = Form(...), subject: str = Form(...), files: L
     process_all_pdfs(pdf_dir, extracted_images_dir)
 
     captions = generate_captions_for_images(extracted_images_dir)
-    pdf_image_captions = create_documents_from_captions(captions, course, subject)
+    pdf_image_captions = create_documents_from_captions(captions, subject)
 
 
     ############## Video ###############
@@ -544,7 +612,7 @@ async def write_data(course: str = Form(...), subject: str = Form(...), files: L
     os.makedirs(frame_dir, exist_ok=True) 
 
     frame_rate = 1
-    proccessed_videos = process_videos_in_directory(video_dir, frame_dir, frame_rate, course, subject)
+    proccessed_videos = process_videos_in_directory(video_dir, frame_dir, frame_rate, subject)
     
     converted_audio_files = []
 
@@ -567,7 +635,7 @@ async def write_data(course: str = Form(...), subject: str = Form(...), files: L
     preproccessed_text = text_preprocess(text_files_dir)
     # print(preproccessed_text)
 
-    documents = update_metadata(preproccessed_text, course, subject)
+    documents = update_metadata(preproccessed_text, subject)
 
     ############## Update Metadata ###############
 
@@ -587,6 +655,7 @@ async def write_data(course: str = Form(...), subject: str = Form(...), files: L
     # print(documents)
     
     save_doc(documents)
+    print("done")
 
     ############## Cleanup ###############
 
@@ -594,10 +663,18 @@ async def write_data(course: str = Form(...), subject: str = Form(...), files: L
     if os.path.exists(pdf_dir):
         shutil.rmtree(pdf_dir)
     if os.path.exists(extracted_images_dir):
+        for filename in os.listdir(extracted_images_dir):
+            src_file = os.path.join(extracted_images_dir, filename)
+            dest_file = os.path.join(IMG_DIRECTORY, filename)
+            shutil.move(src_file, dest_file)
         shutil.rmtree(extracted_images_dir)
     if os.path.exists(video_dir):
         shutil.rmtree(video_dir)
     if os.path.exists(frame_dir):
+        for filename in os.listdir(frame_dir):
+            src_file = os.path.join(frame_dir, filename)
+            dest_file = os.path.join(IMG_DIRECTORY, filename)
+            shutil.move(src_file, dest_file)
         shutil.rmtree(frame_dir)
     if os.path.exists(text_files_dir):
         shutil.rmtree(text_files_dir)
@@ -656,7 +733,6 @@ async def submit_notes(
 async def get_mentor_queries_endpoint():
     try:
         queries = get_mentor_queries()
-        print(queries)
         return {"queries": queries}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -676,9 +752,27 @@ async def respond_to_query_endpoint(response: QueryResponse):
 @app.delete("/delete-mentor_query")
 async def delete_mentor_query(queryId: str):
     try:
-        print(queryId)
+        print("queryId:", queryId)
         delete_mentor_query_by_id(queryId)
         return {"message": "Query deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/get-notifications")
+async def get_notifications_endpoint(user_id: str):
+    try:
+        notifications = get_answered_queries(user_id)
+        return notifications
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/update-notification")
+async def update_notification_endpoint(id: str):
+    try:
+        update_query(id)
+        return {"message": "Query updated successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -693,7 +787,7 @@ async def register(user: User):
         raise HTTPException(status_code=400, detail="User already exists")
 
     hashed_pwd = hash_password(user.password)
-    create_user(user.email, hashed_pwd, user.dateOfBirth)
+    create_user(user.email, hashed_pwd, user.dateOfBirth, user.name, user.phoneNumber)
     all_chatid = get_chat_ids()
     chat_id = generate_random_string(10, all_chatid)
     update_personalization_params(chat_id, user.email, "", "Verbal", "Textbook", "Neutral", "Deductive")
