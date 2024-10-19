@@ -10,7 +10,7 @@ import FeedbackLogs from "./pages/FeedbackPage.tsx";
 import UserData from "./pages/UserDataPage.tsx";
 import ChatPage from "./pages/ChatPage";
 import LoginPage from "./pages/LoginPage";
-import SignUpPage from "./pages/SignUpPage";
+import SignUpPage from "./pages/SignupPage";
 
 function App() {
   return (
