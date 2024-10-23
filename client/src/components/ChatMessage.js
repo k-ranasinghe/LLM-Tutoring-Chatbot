@@ -29,10 +29,10 @@ function ChatMessage({ text, type, shouldStream, mediaType, fileName, inputUserQ
   // Split the message into main content and resources
   const mainContent = Array.isArray(text) ? text[0] : text;
   const resources = Array.isArray(text) && text.length > 1 ? text.slice(1)[0] : [];
-  
+
   useEffect(() => {
     const resources = Array.isArray(text) && text.length > 1 ? text.slice(1) : [];
-    
+
     if (resources.length > 0) {
       const files = text.slice(2)[0];
       setImageUrls(files);
@@ -378,54 +378,56 @@ function ChatMessage({ text, type, shouldStream, mediaType, fileName, inputUserQ
               )}
             </div>
           )}
-          <div className="flex space-x-4">
-            <button
-              onClick={handleSpeak}
-              disabled={isAudioLoading} // Disable button while audio is loading
-              className="p-2 bg-gray-300 rounded-full hover:bg-sky-500 flex items-center justify-center hover:scale-125 transition-transform duration-200"
-              aria-label="Read Aloud"
-            >
-              {icon} {/* Render the current icon */}
-            </button>
-            {/* Thumbs Up/Down Feedback */}
-            <button
-              onClick={() => handleFeedback('up')}
-              className={`p-2 rounded-full ${feedback === 'up' ? 'bg-green-700' : 'bg-gray-300'} hover:bg-green-500 hover:-rotate-45 hover:scale-125 transition-transform duration-200 flex items-center justify-center`}
-              aria-label="Thumbs Up"
-            >
-              {feedback === 'up' ? <HandThumbUpSolid className="w-6 h-6 text-white" /> : <HandThumbUpOutline className="w-6 h-6 text-gray-700" />}
-            </button>
-            <button
-              onClick={() => handleFeedback('down')}
-              className={`p-2 rounded-full ${feedback === 'down' ? 'bg-red-800' : 'bg-gray-300'} hover:bg-red-500 hover:-rotate-45 hover:scale-125 transition-transform duration-200 flex items-center justify-center`}
-              aria-label="Thumbs Down"
-            >
-              {feedback === 'down' ? <HandThumbDownSolid className="w-6 h-6 text-white" /> : <HandThumbDownOutline className="w-6 h-6 text-gray-700" />}
-            </button>
-          </div>
-          {showFeedbackPopup && (
-            <div className="mt-2 p-2 bg-custombg2 rounded-lg shadow-lg">
-              <textarea
-                className="w-full p-2 border rounded-md bg-custombg"
-                rows="3"
-                value={feedbackText}
-                onChange={(e) => setFeedbackText(e.target.value)}
-                placeholder="(Optional) Tell us more about your feedback..."
-              ></textarea>
-              <button
-                onClick={handleFeedbackSubmit}
-                style={{ backgroundColor: "#2f28909c" }}
-                className="mt-2 text-white px-4 py-2 rounded-md hover:text-customtxt hover:scale-105 transition-transform duration-200"
-              >
-                Submit Feedback
-              </button>
-            </div>
-          )}
-          {selectedImage && (
-            <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50" onClick={closeImagePopup}>
-              <img src={selectedImage} alt="Selected" className="max-w-[80%] max-h-[80%] rounded-lg" />
-            </div>
-          )}
+        </div>
+      )}
+      {isStreamingComplete && !isUser && (
+        <div className="flex space-x-4 mt-4">
+          <button
+            onClick={handleSpeak}
+            disabled={isAudioLoading} // Disable button while audio is loading
+            className="p-2 bg-gray-300 rounded-full hover:bg-sky-500 flex items-center justify-center hover:scale-125 transition-transform duration-200"
+            aria-label="Read Aloud"
+          >
+            {icon} {/* Render the current icon */}
+          </button>
+          {/* Thumbs Up/Down Feedback */}
+          <button
+            onClick={() => handleFeedback('up')}
+            className={`p-2 rounded-full ${feedback === 'up' ? 'bg-green-700' : 'bg-gray-300'} hover:bg-green-500 hover:-rotate-45 hover:scale-125 transition-transform duration-200 flex items-center justify-center`}
+            aria-label="Thumbs Up"
+          >
+            {feedback === 'up' ? <HandThumbUpSolid className="w-6 h-6 text-white" /> : <HandThumbUpOutline className="w-6 h-6 text-gray-700" />}
+          </button>
+          <button
+            onClick={() => handleFeedback('down')}
+            className={`p-2 rounded-full ${feedback === 'down' ? 'bg-red-800' : 'bg-gray-300'} hover:bg-red-500 hover:-rotate-45 hover:scale-125 transition-transform duration-200 flex items-center justify-center`}
+            aria-label="Thumbs Down"
+          >
+            {feedback === 'down' ? <HandThumbDownSolid className="w-6 h-6 text-white" /> : <HandThumbDownOutline className="w-6 h-6 text-gray-700" />}
+          </button>
+        </div>
+      )}
+      {showFeedbackPopup && (
+        <div className="mt-2 p-2 bg-custombg2 rounded-lg shadow-lg">
+          <textarea
+            className="w-full p-2 border rounded-md bg-custombg"
+            rows="3"
+            value={feedbackText}
+            onChange={(e) => setFeedbackText(e.target.value)}
+            placeholder="(Optional) Tell us more about your feedback..."
+          ></textarea>
+          <button
+            onClick={handleFeedbackSubmit}
+            style={{ backgroundColor: "#2f28909c" }}
+            className="mt-2 text-white px-4 py-2 rounded-md hover:text-customtxt hover:scale-105 transition-transform duration-200"
+          >
+            Submit Feedback
+          </button>
+        </div>
+      )}
+      {selectedImage && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50" onClick={closeImagePopup}>
+          <img src={selectedImage} alt="Selected" className="max-w-[80%] max-h-[80%] rounded-lg" />
         </div>
       )}
     </motion.div>

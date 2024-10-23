@@ -5,7 +5,29 @@ import Chat from './Chat';
 import axios from 'axios';
 import { ChatBubbleOvalLeftEllipsisIcon } from '@heroicons/react/24/outline';
 
+function useWindowDimensions() {
+  const [windowDimensions, setWindowDimensions] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return windowDimensions;
+}
+
 function MainContent({ isSidebarOpen, chatId, userId }) {
+  const { width } = useWindowDimensions();
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -153,7 +175,7 @@ function MainContent({ isSidebarOpen, chatId, userId }) {
     setTimeout(scrollToBottom, 100);
   }, [messages]);
 
-  return (
+  return width > 500 ? (
     <div className={`flex-grow flex flex-col ${isSidebarOpen ? 'ml-32' : 'ml-20'} transition-all duration-300 font-sans h-[calc(80vh-4rem)]`}>
       <style>
         {`
@@ -248,6 +270,78 @@ function MainContent({ isSidebarOpen, chatId, userId }) {
             <h2 className="text-xl font-bold text-center">Notification Details</h2>
             <p><strong>Query:</strong> {selectedNotification.query}</p>
             {/* <p><strong>Chatbot Response:</strong> {selectedNotification.chatbot_response}</p> */}
+            <p><strong>Mentor Response:</strong> {selectedNotification.mentor_response}</p>
+            <p><strong>Mentor ID:</strong> {selectedNotification.mentorid}</p>
+          </div>
+        </div>
+      )}
+    </div>
+    ) : (
+      /* Mobile View */
+      <div className="flex-grow flex flex-col ml-1 transition-all duration-300 font-sans h-[calc(80vh-4rem)]">
+      <button
+              ref={notificationButtonRef}
+              className="absolute top-20 right-4 p-2 rounded-full bg-customtxt"
+              onClick={handleNotificationsClick}
+            >
+              <ChatBubbleOvalLeftEllipsisIcon className="h-6 w-6 text-gray-700 hover:text-sky-700 transform hover:scale-110 transition-transform duration-200" />
+              {unviewedCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full h-4 w-4 flex items-center justify-center text-xs">
+                  {unviewedCount}
+                </span>
+              )}
+            </button>
+      <div className="flex flex-col flex-grow overflow-hidden">
+        <div className="flex-grow overflow-y-auto p-4 overflow-x-hidden w-auto -mr-6 -ml-7">
+          <Chat messages={messages} isLoading={isLoading} userId={userId} chatId={chatId} />
+          <div ref={chatEndRef} />
+        </div>
+        <div>
+          <div className="flex items-center">
+            <div className="flex-grow -ml-0.5">
+              <PromptInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+            </div>
+          </div>
+        </div>
+      </div>
+      {isNotificationPanelOpen && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
+    <div className="bg-custombg p-4 rounded-xl shadow-lg max-w-sm w-full">
+      <h2 className="text-lg font-bold mb-3 text-customtxt text-center">Notification Panel</h2>
+      {notifications.length === 0 ? (
+        <p className="text-center text-customtxt">You do not currently have any notifications.</p>
+      ) : (
+        <ul>
+          {notifications.map((notification, index) => (
+            <li
+              key={index}
+              className={`p-2 mb-1 text-customtxt hover:bg-custombg2 cursor-pointer border border-customtxt rounded-2xl ${
+                notification.viewed === 0 ? 'bg-custombg3' : ''
+              }`}
+              onClick={() => handleNotificationClick(notification)}
+            >
+              {notification.query}
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex justify-center">
+        <button
+          className="mt-4 p-2 px-4 bg-customtxt text-custombg font-bold rounded-xl hover:scale-105 transition-transform duration-200"
+          onClick={() => setIsNotificationPanelOpen(false)}
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+      {selectedNotification && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center" onClick={() => setSelectedNotification(null)}>
+          <div className="bg-custombg text-customtxt p-4 rounded-xl shadow-lg w-2/3 space-y-2">
+            <h2 className="text-lg font-bold text-center">Notification Details</h2>
+            <p><strong>Query:</strong> {selectedNotification.query}</p>
             <p><strong>Mentor Response:</strong> {selectedNotification.mentor_response}</p>
             <p><strong>Mentor ID:</strong> {selectedNotification.mentorid}</p>
           </div>

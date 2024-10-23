@@ -139,7 +139,7 @@ def run_model(ChatID, UserID, input_text, extract, mediaType, fileName, preloade
         response_str = {"response":response, "response_time":response_time, "context":formatted_string, "files":files}
 
         # Offload the chat history and summary updates to a background task
-        background_tasks.add_task(update_chat_history_and_summary, ChatID, UserID, input_text, mediaType, fileName, chat_history, response, context, files, internal_response, personalization, chat_summary)
+        update_chat_history_and_summary(ChatID, UserID, input_text, mediaType, fileName, chat_history, response, context, files, internal_response, personalization, chat_summary)
 
 
         return (response_str)

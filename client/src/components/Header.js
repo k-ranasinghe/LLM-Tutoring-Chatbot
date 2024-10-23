@@ -1,8 +1,11 @@
 // src/components/Header.js
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import Cookies from 'js-cookie';
 
 function Header({ isAdmin }) {
+  const location = useLocation();
+
   const handleSignOut = () => {
     // Remove the cookies
     Cookies.remove('userId');
@@ -20,31 +23,32 @@ function Header({ isAdmin }) {
           </h1>
         </div>
         <nav>
-          <ul className="flex space-x-6 mr-10">
-            {/* Conditionally render the "Admin" link if the user is an admin */}
-            {isAdmin && (
+          {location.pathname === '/chat' && (
+            <ul className="flex space-x-6 mr-10">
+              {/* Conditionally render the "Admin" link if the user is an admin */}
+              {isAdmin && (
+                <li className="text-lg bg-customtxt font-medium transition duration-300 transform hover:scale-105 p-2 rounded-2xl">
+                  <a href="/upload" className="text-custombg font-bold hover:text-gray-700">
+                    Admin Panel
+                  </a>
+                </li>
+              )}
               <li className="text-lg bg-customtxt font-medium transition duration-300 transform hover:scale-105 p-2 rounded-2xl">
-                <a href="/upload" className="text-custombg font-bold hover:text-gray-700">
-                  Admin Panel
-                </a>
+                <button
+                  className="text-custombg font-bold hover:text-gray-700"
+                  onClick={handleSignOut} // Call handleSignOut on click
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Sign Out
+                </button>
               </li>
-            )}
-            {/* Display the Sign Out button */}
-            <li className="text-lg bg-customtxt font-medium transition duration-300 transform hover:scale-105 p-2 rounded-2xl">
-              <button
-                className="text-custombg font-bold hover:text-gray-700"
-                onClick={handleSignOut} // Call handleSignOut on click
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: 'pointer',
-                }}
-              >
-                Sign Out
-              </button>
-            </li>
-          </ul>
+            </ul>
+          )}
         </nav>
       </div>
     </header>

@@ -228,7 +228,7 @@ async def process_input(ChatID: str = Form(...), UserID: str = Form(...), input_
         extract = "No file attachments provided"
         response = run_model(ChatID, UserID, input_text, extract, mediaType, fileName, preloaded_data, background_tasks)
         
-    background_tasks.add_task(update_preload_data, ChatID)
+    await update_preload_data(ChatID)
 
     return response
 
@@ -283,7 +283,7 @@ async def get_past_chats_endpoint(userId: str, background_tasks: BackgroundTasks
     try:
         past_chats = get_past_chats(userId)
         
-        background_tasks.add_task(preload_user_data, userId)
+        await preload_user_data(userId)
         return past_chats
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -391,7 +391,7 @@ async def feedback(request: Feedback, background_tasks: BackgroundTasks = Backgr
     store_feedback(userId, review)
     log_feedback(userId, userText, text, feedback_type, feedbackText, review)
     
-    background_tasks.add_task(preload_user_data, userId)
+    await preload_user_data(userId)
 
     return review
 

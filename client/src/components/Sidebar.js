@@ -190,13 +190,13 @@ function Sidebar({ isOpen, toggleSidebar, chatId, setChatId, userId }) {
     `}
   </style>
       <img src={Logo} alt="Chat GPT Logo" style={{ backgroundColor: "#ffffff" }} className="object-contain h-30 w-35" />
-      <div className="flex justify-end">
+      {/* <div className="flex justify-end">
         <button onClick={toggleSidebar}>
           <WindowIcon className="h-6 w-6 mt-2 mr-3 -mb-3 transform rotate-90 -scale-y-100 hover:scale-125 transition-transform duration-200" />
         </button>
-      </div>
+      </div> */}
 
-      <div className="p-4 flex justify-between items-center">
+      <div className="p-4 flex justify-between items-center mt-10">
         <h3 className={`text-lg font-bold -mb-3 flex items-center space-x-2 ${isOpen ? 'block' : 'hidden'}`}><ChatBubbleLeftRightIcon className="h-6 w-6 mr-2" />Past Chats</h3>
         <button onClick={() => setIsPastChatsOpen(!isPastChatsOpen)}>
           {isPastChatsOpen ? <ChevronUpIcon className="h-6 w-6" /> : <ChevronDownIcon className="h-6 w-6" />}

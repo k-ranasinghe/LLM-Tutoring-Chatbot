@@ -137,8 +137,39 @@ function PromptInput({ onSendMessage, isLoading }) {
     }
   };
 
+  const handleInput = (e) => {
+    const value = e.target.value;
+    setInput(value);
+  
+    // Reset height
+    e.target.style.height = 'auto';
+  
+    // Calculate the number of rows
+    const lineHeight = 24; // Adjust this based on your CSS line height
+    const rows = Math.min(Math.ceil(e.target.scrollHeight / lineHeight), 5);
+  
+    // Set height based on the number of rows, capped at max height
+    e.target.style.height = `${rows * lineHeight}px`;
+  };
+
   return (
     <div style={{ backgroundColor: '#2f2f2f45' }} className="p-2 shadow-md flex flex-col font-sans rounded-full">
+      <style>
+      {`
+      ::-webkit-scrollbar {
+        width: 15px; /* Width of the scrollbar */
+        background: transparent; /* Transparent background */
+      }
+      ::-webkit-scrollbar-thumb {
+        background-color: rgba(90, 90, 90, 0.8); /* Lighter thumb color */
+        border-left: 0px solid #212121;
+        border-right: 0px solid #212121;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(90, 90, 90, 1); /* Darker thumb on hover */
+      }
+    `}
+</style>
       {/* Show file name and icon when a file is attached */}
       {selectedFile && (
         <div className="flex items-center mb-2 ml-20">
@@ -167,14 +198,15 @@ function PromptInput({ onSendMessage, isLoading }) {
             disabled={isLoading}
           />
         </label>
-        <input
+        <textarea
           type="text"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={handleInput}
           onKeyPress={handleKeyPress}
           onPaste={handlePaste}
           placeholder="Type your prompt..."
-          style={{ backgroundColor: '#2f2f2f', color: '#b4b4b4' }}
+          rows={1}
+          style={{ backgroundColor: '#2f2f2f', color: '#b4b4b4', resize: 'none' }}
           className="flex-grow p-2 border border-gray-500 rounded-lg focus:outline-none"
           disabled={isLoading}
         />
